@@ -1,0 +1,21 @@
+{
+  "name": "mini-hads",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "npm@10.9.4",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:miniapp": "npm run dev -w @mini-hads/miniapp",
+    "dev:api": "npm run dev -w @mini-hads/api",
+    "infra:up": "docker compose up -d postgres",
+    "infra:down": "docker compose down",
+    "build": "npm run build -w @mini-hads/domain && npm run build -w @mini-hads/api && npm run build -w @mini-hads/miniapp",
+    "lint": "npm run lint -w @mini-hads/domain && npm run lint -w @mini-hads/api && npm run lint -w @mini-hads/miniapp",
+    "typecheck": "npm run typecheck -w @mini-hads/domain && npm run typecheck -w @mini-hads/api && npm run typecheck -w @mini-hads/miniapp",
+    "db:generate": "npm run prisma:generate -w @mini-hads/api",
+    "db:push": "npm run prisma:push -w @mini-hads/api"
+  }
+}

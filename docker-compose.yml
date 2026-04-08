@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: mini-hads-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: mini_hads
+      POSTGRES_USER: mini_hads
+      POSTGRES_PASSWORD: mini_hads_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - mini_hads_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mini_hads -d mini_hads"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  mini_hads_postgres:

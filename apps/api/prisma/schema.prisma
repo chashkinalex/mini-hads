@@ -1,0 +1,42 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Doctor {
+  id             String          @id @default(cuid())
+  platform       String
+  platformUserId String
+  displayName    String
+  createdAt      DateTime        @default(now())
+  sessions       SurveySession[]
+
+  @@unique([platform, platformUserId])
+}
+
+model SurveySession {
+  id           String                 @id @default(cuid())
+  doctorId     String
+  publicToken  String                 @unique
+  status       String
+  createdAt    DateTime               @default(now())
+  expiresAt    DateTime
+  doctor       Doctor                 @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  response     QuestionnaireResponse?
+}
+
+model QuestionnaireResponse {
+  id              String       @id @default(cuid())
+  sessionId       String       @unique
+  answersJson     String
+  anxietyScore    Int
+  depressionScore Int
+  anxietyLevel    String
+  depressionLevel String
+  submittedAt     DateTime     @default(now())
+  session         SurveySession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
