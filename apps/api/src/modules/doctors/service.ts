@@ -1,5 +1,4 @@
 import { getHadsInterpretation, type HadsAnswers, type HadsLevel } from "@mini-hads/domain";
-import type { QuestionnaireResponse, SurveySession } from "@prisma/client";
 import { prisma } from "../../lib/prisma";
 
 export async function getDoctorDashboard(doctorId: string) {
@@ -18,14 +17,14 @@ export async function getDoctorDashboard(doctorId: string) {
   ]);
 
   return {
-    sessions: sessions.map((session: SurveySession) => ({
+    sessions: sessions.map((session) => ({
       id: session.id,
       publicToken: session.publicToken,
       status: session.status,
       createdAt: session.createdAt.toISOString(),
       expiresAt: session.expiresAt.toISOString(),
     })),
-    results: results.map((result: QuestionnaireResponse & { session: SurveySession }) => ({
+    results: results.map((result) => ({
       ...(function () {
         const anxietyLevel = result.anxietyLevel as HadsLevel;
         const depressionLevel = result.depressionLevel as HadsLevel;
