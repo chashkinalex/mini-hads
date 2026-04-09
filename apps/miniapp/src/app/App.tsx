@@ -14,6 +14,7 @@ import {
   type SessionRecord,
 } from "../shared/api/client";
 import { detectPlatform } from "../platform/detectPlatform";
+import type { SupportedPlatform } from "../platform/types";
 import { getMaxStartParam } from "../platform/max";
 import "../shared/ui/app.css";
 
@@ -96,19 +97,28 @@ function shouldConfirmBeforeNewPatient(session?: SessionRecord) {
   return session.status === "created" || session.status === "opened";
 }
 
-export function App() {
+function getLaunchContext(): { token: string | null; launch: boolean; platform: SupportedPlatform } {
   const search = new URLSearchParams(window.location.search);
-  const token = search.get("token") ?? getMaxStartParam();
-  const launch = search.get("launch") === "1" || Boolean(getMaxStartParam());
-  const platform = detectPlatform();
+  const maxToken = getMaxStartParam();
+
+  return {
+    token: search.get("token") ?? maxToken,
+    launch: search.get("launch") === "1" || Boolean(maxToken),
+    platform: detectPlatform(),
+  };
+}
+
+export function App() {
+  const initialContext = getLaunchContext();
+  const platform = initialContext.platform;
   const [answers, setAnswers] = useState<DraftAnswers>(initialAnswers);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [isAdvancing, setIsAdvancing] = useState(false);
   const [state, setState] = useState<AppState>(
-    token
-      ? launch
-        ? { mode: "patient", token, doctorName: "", result: null, loading: true, error: null }
-        : { mode: "join", token, doctorName: "", loading: true, error: null }
+    initialContext.token
+      ? initialContext.launch
+        ? { mode: "patient", token: initialContext.token, doctorName: "", result: null, loading: true, error: null }
+        : { mode: "join", token: initialContext.token, doctorName: "", loading: true, error: null }
       : {
           mode: "doctor",
           doctor: null,
@@ -120,6 +130,71 @@ export function App() {
           showCancelConfirm: false,
         },
   );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    function syncLaunchContext() {
+      if (cancelled) {
+        return true;
+      }
+
+      const context = getLaunchContext();
+
+      if (!context.token) {
+        return false;
+      }
+
+      const launchedToken = context.token;
+
+      setState((prev) => {
+        if ((prev.mode === "patient" || prev.mode === "join") && prev.token === launchedToken) {
+          return prev;
+        }
+
+        if (context.launch) {
+          return {
+            mode: "patient",
+            token: launchedToken,
+            doctorName: "",
+            result: null,
+            loading: true,
+            error: null,
+          };
+        }
+
+        return {
+          mode: "join",
+          token: launchedToken,
+          doctorName: "",
+          loading: true,
+          error: null,
+        };
+      });
+
+      return true;
+    }
+
+    if (syncLaunchContext()) {
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    let attempts = 0;
+    const intervalId = window.setInterval(() => {
+      attempts += 1;
+
+      if (syncLaunchContext() || attempts >= 20) {
+        window.clearInterval(intervalId);
+      }
+    }, 200);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+    };
+  }, []);
 
   const activeSession = useMemo(() => {
     if (state.mode !== "doctor" || !state.currentToken) return null;
