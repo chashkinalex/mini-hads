@@ -15,7 +15,7 @@ import {
 } from "../shared/api/client";
 import { detectPlatform } from "../platform/detectPlatform";
 import type { SupportedPlatform } from "../platform/types";
-import { getMaxStartParam } from "../platform/max";
+import { getMaxDebugSnapshot, getMaxStartParam } from "../platform/max";
 import "../shared/ui/app.css";
 
 type DraftAnswers = Partial<Record<HadsQuestionId, HadsAnswers[HadsQuestionId]>>;
@@ -110,6 +110,7 @@ function getLaunchContext(): { token: string | null; launch: boolean; platform: 
 
 export function App() {
   const initialContext = getLaunchContext();
+  const showMaxDebug = new URLSearchParams(window.location.search).get("debug_max") === "1";
   const platform = initialContext.platform;
   const [answers, setAnswers] = useState<DraftAnswers>(initialAnswers);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -219,6 +220,30 @@ export function App() {
   const currentQuestion = hadsQuestions[currentQuestionIndex];
   const answeredCount = hadsQuestions.filter((question) => answers[question.id] !== undefined).length;
   const isLastQuestion = currentQuestionIndex === hadsQuestions.length - 1;
+  const maxDebugSnapshot = useMemo(() => getMaxDebugSnapshot(), [state.mode]);
+
+  function renderMaxDebugCard() {
+    if (!showMaxDebug) {
+      return null;
+    }
+
+    return (
+      <article className="card debug-card stack">
+        <div className="section-title">MAX debug</div>
+        <div className="debug-grid">
+          <div><strong>platform:</strong> {platform}</div>
+          <div><strong>mode:</strong> {state.mode}</div>
+          <div><strong>search:</strong> {maxDebugSnapshot.search || "(empty)"}</div>
+          <div><strong>hasWebApp:</strong> {String(maxDebugSnapshot.hasWebApp)}</div>
+          <div><strong>directStartParam:</strong> {maxDebugSnapshot.directStartParam || "(null)"}</div>
+          <div><strong>unsafeStartParam:</strong> {maxDebugSnapshot.unsafeStartParam || "(null)"}</div>
+          <div><strong>parsedInitDataStartParam:</strong> {maxDebugSnapshot.parsedInitDataStartParam || "(null)"}</div>
+          <div><strong>resolvedToken:</strong> {getMaxStartParam() || "(null)"}</div>
+          <div><strong>initData:</strong> <code className="code">{maxDebugSnapshot.initData || "(empty)"}</code></div>
+        </div>
+      </article>
+    );
+  }
 
   useEffect(() => {
     if (state.mode === "patient") {
@@ -475,6 +500,7 @@ export function App() {
             Ссылка получена от врача {state.doctorName || "Praxium"}. Вы можете открыть опрос в Mini App нужной платформы или продолжить в браузере для локального теста.
           </p>
           {state.error ? <p>{state.error}</p> : null}
+          {renderMaxDebugCard()}
           <div className="join-grid">
             <button className="card join-card" onClick={() => launchPatientFlow("max")}>
               <span className="pill">MAX</span>
@@ -537,6 +563,7 @@ export function App() {
             </div>
           </div>
           {state.error ? <p>{state.error}</p> : null}
+          {renderMaxDebugCard()}
           {state.result ? (
             <div className="grid">
               <article className="card stack metric-card">
@@ -624,6 +651,7 @@ export function App() {
           Врач создаёт QR-код для нового пациента, а статус и результаты обновляются автоматически без перезагрузки экрана.
         </p>
         {state.error ? <p>{state.error}</p> : null}
+        {renderMaxDebugCard()}
 
         {state.showCancelConfirm ? (
           <div className="card confirm-card stack">

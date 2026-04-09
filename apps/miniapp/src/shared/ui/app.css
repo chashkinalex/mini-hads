@@ -186,6 +186,17 @@ input {
   border: 1px solid var(--border);
 }
 
+.debug-card {
+  background: #fff8e8;
+  border-color: rgba(255, 189, 79, 0.4);
+}
+
+.debug-grid {
+  display: grid;
+  gap: 10px;
+  font-size: 0.95rem;
+}
+
 .code {
   display: block;
   overflow-wrap: anywhere;

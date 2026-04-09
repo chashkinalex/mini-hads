@@ -42,3 +42,31 @@ export function getMaxStartParam() {
   const params = new URLSearchParams(initData);
   return params.get("start_param");
 }
+
+export function getMaxDebugSnapshot() {
+  if (typeof window === "undefined") {
+    return {
+      search: "",
+      directStartParam: null,
+      unsafeStartParam: null,
+      parsedInitDataStartParam: null,
+      initData: "",
+      hasWebApp: false,
+    };
+  }
+
+  const search = new URLSearchParams(window.location.search);
+  const initData = getRawMaxInitData();
+  const unsafeStartParam = getMaxInitDataUnsafe()?.start_param ?? null;
+  const parsedInitDataStartParam = initData ? new URLSearchParams(initData).get("start_param") : null;
+  const directStartParam = search.get("WebAppStartParam") || search.get("start_param") || search.get("startapp") || search.get("token");
+
+  return {
+    search: window.location.search,
+    directStartParam,
+    unsafeStartParam,
+    parsedInitDataStartParam,
+    initData,
+    hasWebApp: Boolean((window as Window & { WebApp?: unknown }).WebApp),
+  };
+}
