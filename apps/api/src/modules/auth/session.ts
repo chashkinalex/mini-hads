@@ -1,6 +1,5 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
-const SESSION_COOKIE_NAME = "mini_hads_session";
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7;
 
 type SessionPayload = {
@@ -24,7 +23,7 @@ function signPayload(encodedPayload: string) {
   return createHmac("sha256", getSessionSecret()).update(encodedPayload).digest("base64url");
 }
 
-export function createDoctorSessionCookie(doctorId: string) {
+export function createDoctorAccessToken(doctorId: string) {
   const payload: SessionPayload = {
     doctorId,
     expiresAt: Date.now() + SESSION_TTL_MS,
@@ -32,55 +31,15 @@ export function createDoctorSessionCookie(doctorId: string) {
 
   const encodedPayload = toBase64Url(JSON.stringify(payload));
   const signature = signPayload(encodedPayload);
-  const value = `${encodedPayload}.${signature}`;
-  const isProduction = process.env.NODE_ENV === "production";
-  const secure = isProduction;
-  const sameSite = isProduction ? "none" : "lax";
-  const maxAge = Math.floor(SESSION_TTL_MS / 1000);
-
-  return {
-    name: SESSION_COOKIE_NAME,
-    value,
-    options: {
-      httpOnly: true,
-      secure,
-      sameSite,
-      path: "/",
-      maxAge,
-    } as const,
-  };
+  return `${encodedPayload}.${signature}`;
 }
 
-export function clearDoctorSessionCookie() {
-  return {
-    name: SESSION_COOKIE_NAME,
-    value: "",
-    options: {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? ("none" as const) : ("lax" as const),
-      path: "/",
-      maxAge: 0,
-    },
-  };
-}
-
-export function readDoctorSessionCookie(cookieHeader?: string | null) {
-  if (!cookieHeader) {
+export function readDoctorAccessToken(token?: string | null) {
+  if (!token) {
     return null;
   }
 
-  const sessionPair = cookieHeader
-    .split(";")
-    .map((part) => part.trim())
-    .find((part) => part.startsWith(`${SESSION_COOKIE_NAME}=`));
-
-  if (!sessionPair) {
-    return null;
-  }
-
-  const value = sessionPair.slice(SESSION_COOKIE_NAME.length + 1);
-  const [encodedPayload, signature] = value.split(".");
+  const [encodedPayload, signature] = token.split(".");
 
   if (!encodedPayload || !signature) {
     return null;

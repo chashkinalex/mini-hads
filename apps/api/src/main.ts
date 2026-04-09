@@ -36,13 +36,13 @@ app.get("/health", (_request, response) => {
 app.post("/auth/platform-login", async (request, response) => {
   try {
     const auth = await loginDoctor(request.body);
-    response.cookie(auth.sessionCookie.name, auth.sessionCookie.value, auth.sessionCookie.options);
     response.json({
       doctor: {
         id: auth.doctor.id,
         platform: auth.doctor.platform,
         displayName: auth.doctor.displayName,
       },
+      accessToken: auth.accessToken,
     });
   } catch (error) {
     response.status(400).send(error instanceof Error ? error.message : "Auth failed");

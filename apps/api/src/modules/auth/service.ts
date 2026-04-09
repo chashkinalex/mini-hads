@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { prisma } from "../../lib/prisma";
 import { validateMaxLaunchData } from "./maxValidation";
-import { createDoctorSessionCookie } from "./session";
+import { createDoctorAccessToken } from "./session";
 
 const platformLoginSchema = z.object({
   platform: z.enum(["telegram", "max", "vk", "web"]),
@@ -53,6 +53,6 @@ export async function loginDoctor(input: PlatformLoginInput) {
 
   return {
     doctor,
-    sessionCookie: createDoctorSessionCookie(doctor.id),
+    accessToken: createDoctorAccessToken(doctor.id),
   };
 }

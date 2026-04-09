@@ -18,12 +18,30 @@ export type SessionRecord = {
 };
 
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
+const ACCESS_TOKEN_STORAGE_KEY = "mini_hads_access_token";
+
+function getAccessToken() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  return window.localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY);
+}
+
+function setAccessToken(token: string) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, token);
+}
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const accessToken = getAccessToken();
   const response = await fetch(`${API_URL}${path}`, {
-    credentials: "include",
     headers: {
       "Content-Type": "application/json",
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
       ...(init?.headers ?? {}),
     },
     ...init,
@@ -47,12 +65,15 @@ export function loginDoctor(platform: string) {
           ? getVkLaunchData()
           : { platform: "web" as const, raw: `dev-web` };
 
-  return request<{ doctor: Doctor }>("/auth/platform-login", {
+  return request<{ doctor: Doctor; accessToken: string }>("/auth/platform-login", {
     method: "POST",
     body: JSON.stringify({
       platform: launchData.platform,
       launchData: { raw: launchData.raw || `dev-${platform}` },
     }),
+  }).then((result) => {
+    setAccessToken(result.accessToken);
+    return result;
   });
 }
 
@@ -92,7 +113,14 @@ export function submitPatientAnswers(token: string, answers: HadsAnswers) {
 }
 
 export function subscribeDoctorEvents(onEvent: (event: MessageEvent<string>) => void) {
-  const source = new EventSource(`${API_URL}/me/events`, { withCredentials: true });
+  const accessToken = getAccessToken();
+  const url = new URL(`${API_URL}/me/events`);
+
+  if (accessToken) {
+    url.searchParams.set("access_token", accessToken);
+  }
+
+  const source = new EventSource(url);
 
   source.addEventListener("session_created", onEvent);
   source.addEventListener("session_opened", onEvent);

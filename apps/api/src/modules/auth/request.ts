@@ -1,9 +1,20 @@
 import type { Request, Response } from "express";
 import { prisma } from "../../lib/prisma";
-import { readDoctorSessionCookie, clearDoctorSessionCookie } from "./session";
+import { readDoctorAccessToken } from "./session";
+
+function getAccessToken(request: Request) {
+  const authHeader = request.headers.authorization;
+
+  if (authHeader?.startsWith("Bearer ")) {
+    return authHeader.slice("Bearer ".length).trim();
+  }
+
+  const queryToken = request.query.access_token;
+  return typeof queryToken === "string" ? queryToken : null;
+}
 
 export async function requireDoctor(request: Request, response: Response) {
-  const session = readDoctorSessionCookie(request.headers.cookie);
+  const session = readDoctorAccessToken(getAccessToken(request));
 
   if (!session) {
     response.status(401).send("Unauthorized");
@@ -15,8 +26,6 @@ export async function requireDoctor(request: Request, response: Response) {
   });
 
   if (!doctor) {
-    const cleared = clearDoctorSessionCookie();
-    response.cookie(cleared.name, cleared.value, cleared.options);
     response.status(401).send("Unauthorized");
     return null;
   }
