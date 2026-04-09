@@ -264,8 +264,8 @@ export function App() {
       return;
     }
 
-    const source = subscribeDoctorEvents(state.doctor.id, () => {
-      void refreshDoctorDashboard(state.doctor!.id);
+    const source = subscribeDoctorEvents(() => {
+      void refreshDoctorDashboard();
     });
 
     return () => {
@@ -273,8 +273,8 @@ export function App() {
     };
   }, [state.mode === "doctor" ? state.doctor?.id : null]);
 
-  async function refreshDoctorDashboard(doctorId: string) {
-    const dashboard = await getDoctorResults(doctorId);
+  async function refreshDoctorDashboard() {
+    const dashboard = await getDoctorResults();
 
     setState((prev) => {
       if (prev.mode !== "doctor") return prev;
@@ -300,7 +300,7 @@ export function App() {
 
     try {
       const auth = await loginDoctor(platform);
-      const dashboard = await getDoctorResults(auth.doctor.id);
+      const dashboard = await getDoctorResults();
 
       setState({
         mode: "doctor",
@@ -379,8 +379,8 @@ export function App() {
     setState({ ...state, loading: true, error: null, showCancelConfirm: false });
 
     try {
-      const response = await createDoctorSession(state.doctor.id);
-      const dashboard = await getDoctorResults(state.doctor.id);
+      const response = await createDoctorSession();
+      const dashboard = await getDoctorResults();
 
       setState({
         ...state,

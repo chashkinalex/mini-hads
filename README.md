@@ -52,7 +52,7 @@ The frontend opens on `http://localhost:5173`, the API listens on `http://localh
 ## Important env vars
 
 - API:
-  `DATABASE_URL`, `PORT`, `ALLOWED_ORIGINS`, `ALLOW_DEV_AUTH`, `MAX_BOT_TOKEN`
+  `DATABASE_URL`, `PORT`, `ALLOWED_ORIGINS`, `ALLOW_DEV_AUTH`, `SESSION_SECRET`, `MAX_BOT_TOKEN`
 - Frontend:
   `VITE_API_URL`, `VITE_MAX_BOT_NAME`
 

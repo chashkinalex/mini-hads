@@ -132,13 +132,17 @@ export async function openSession(publicToken: string) {
   };
 }
 
-export async function cancelSession(publicToken: string) {
+export async function cancelSession(publicToken: string, doctorId: string) {
   const session = await prisma.surveySession.findUnique({
     where: { publicToken },
   });
 
   if (!session) {
     throw new Error("Session not found");
+  }
+
+  if (session.doctorId !== doctorId) {
+    throw new Error("Forbidden");
   }
 
   if (session.status === "submitted") {

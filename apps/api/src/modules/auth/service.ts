@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { prisma } from "../../lib/prisma";
 import { validateMaxLaunchData } from "./maxValidation";
+import { createDoctorSessionCookie } from "./session";
 
 const platformLoginSchema = z.object({
   platform: z.enum(["telegram", "max", "vk", "web"]),
@@ -33,7 +34,7 @@ export async function loginDoctor(input: PlatformLoginInput) {
     throw new Error(`Production auth for platform "${parsed.platform}" is not configured yet`);
   }
 
-  return prisma.doctor.upsert({
+  const doctor = await prisma.doctor.upsert({
     where: {
       platform_platformUserId: {
         platform: parsed.platform,
@@ -49,4 +50,9 @@ export async function loginDoctor(input: PlatformLoginInput) {
       displayName,
     },
   });
+
+  return {
+    doctor,
+    sessionCookie: createDoctorSessionCookie(doctor.id),
+  };
 }

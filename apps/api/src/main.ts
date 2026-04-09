@@ -1,6 +1,7 @@
 import cors from "cors";
 import express from "express";
 import { z } from "zod";
+import { requireDoctor } from "./modules/auth/request";
 import { loginDoctor } from "./modules/auth/service";
 import { getDoctorDashboard } from "./modules/doctors/service";
 import { subscribeDoctor } from "./modules/realtime/broker";
@@ -23,6 +24,7 @@ app.use(
 
       callback(new Error("CORS origin is not allowed"));
     },
+    credentials: true,
   }),
 );
 app.use(express.json());
@@ -33,12 +35,13 @@ app.get("/health", (_request, response) => {
 
 app.post("/auth/platform-login", async (request, response) => {
   try {
-    const doctor = await loginDoctor(request.body);
+    const auth = await loginDoctor(request.body);
+    response.cookie(auth.sessionCookie.name, auth.sessionCookie.value, auth.sessionCookie.options);
     response.json({
       doctor: {
-        id: doctor.id,
-        platform: doctor.platform,
-        displayName: doctor.displayName,
+        id: auth.doctor.id,
+        platform: auth.doctor.platform,
+        displayName: auth.doctor.displayName,
       },
     });
   } catch (error) {
@@ -48,22 +51,32 @@ app.post("/auth/platform-login", async (request, response) => {
 
 app.post("/sessions", async (request, response) => {
   try {
-    const body = z.object({ doctorId: z.string().min(1) }).parse(request.body);
-    const session = await createSession(body.doctorId);
+    const doctor = await requireDoctor(request, response);
+
+    if (!doctor) {
+      return;
+    }
+
+    const session = await createSession(doctor.id);
     response.status(201).json({ session });
   } catch (error) {
     response.status(400).send(error instanceof Error ? error.message : "Failed to create session");
   }
 });
 
-app.get("/doctors/:doctorId/events", (request, response) => {
+app.get("/me/events", async (request, response) => {
+  const doctor = await requireDoctor(request, response);
+
+  if (!doctor) {
+    return;
+  }
+
   response.setHeader("Content-Type", "text/event-stream");
   response.setHeader("Cache-Control", "no-cache");
   response.setHeader("Connection", "keep-alive");
   response.flushHeaders?.();
 
-  const doctorId = request.params.doctorId;
-  const unsubscribe = subscribeDoctor(doctorId, (event, payload) => {
+  const unsubscribe = subscribeDoctor(doctor.id, (event, payload) => {
     response.write(`event: ${event}\n`);
     response.write(`data: ${JSON.stringify(payload)}\n\n`);
   });
@@ -125,16 +138,28 @@ app.post("/sessions/:token/submit", async (request, response) => {
 
 app.post("/sessions/:token/cancel", async (request, response) => {
   try {
-    const session = await cancelSession(request.params.token);
+    const doctor = await requireDoctor(request, response);
+
+    if (!doctor) {
+      return;
+    }
+
+    const session = await cancelSession(request.params.token, doctor.id);
     response.json({ session });
   } catch (error) {
     response.status(400).send(error instanceof Error ? error.message : "Failed to cancel session");
   }
 });
 
-app.get("/doctors/:doctorId/dashboard", async (request, response) => {
+app.get("/me/dashboard", async (request, response) => {
   try {
-    const dashboard = await getDoctorDashboard(request.params.doctorId);
+    const doctor = await requireDoctor(request, response);
+
+    if (!doctor) {
+      return;
+    }
+
+    const dashboard = await getDoctorDashboard(doctor.id);
     response.json(dashboard);
   } catch (error) {
     response.status(400).send(error instanceof Error ? error.message : "Failed to load dashboard");

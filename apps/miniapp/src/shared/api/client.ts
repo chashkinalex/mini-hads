@@ -21,6 +21,7 @@ const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_URL}${path}`, {
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...(init?.headers ?? {}),
@@ -55,10 +56,9 @@ export function loginDoctor(platform: string) {
   });
 }
 
-export function createDoctorSession(doctorId: string) {
+export function createDoctorSession() {
   return request<{ session: SessionRecord }>("/sessions", {
     method: "POST",
-    body: JSON.stringify({ doctorId }),
   });
 }
 
@@ -68,9 +68,9 @@ export function cancelDoctorSession(token: string) {
   });
 }
 
-export function getDoctorResults(doctorId: string) {
+export function getDoctorResults() {
   return request<{ sessions: SessionRecord[]; results: Array<HadsScoreResult & { sessionId: string; submittedAt: string; answers: HadsAnswers }> }>(
-    `/doctors/${doctorId}/dashboard`,
+    "/me/dashboard",
   );
 }
 
@@ -91,8 +91,8 @@ export function submitPatientAnswers(token: string, answers: HadsAnswers) {
   });
 }
 
-export function subscribeDoctorEvents(doctorId: string, onEvent: (event: MessageEvent<string>) => void) {
-  const source = new EventSource(`${API_URL}/doctors/${doctorId}/events`);
+export function subscribeDoctorEvents(onEvent: (event: MessageEvent<string>) => void) {
+  const source = new EventSource(`${API_URL}/me/events`, { withCredentials: true });
 
   source.addEventListener("session_created", onEvent);
   source.addEventListener("session_opened", onEvent);

@@ -25,6 +25,7 @@ Create:
 - `ALLOWED_ORIGINS` = comma-separated frontend domains, for example:
   `https://your-project.vercel.app,https://app.your-domain.com`
 - `ALLOW_DEV_AUTH` = `false`
+- `SESSION_SECRET` = long random secret for signed doctor session cookies
 - `MAX_BOT_TOKEN` = production token of your MAX bot
 
 ### One-time setup command
