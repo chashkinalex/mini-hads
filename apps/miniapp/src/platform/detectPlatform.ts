@@ -12,5 +12,17 @@ export function detectPlatform(): SupportedPlatform {
     return explicit;
   }
 
+  if ((window as Window & { WebApp?: { initData?: string } }).WebApp?.initData) {
+    return "max";
+  }
+
+  if ((window as Window & { Telegram?: { WebApp?: { initData?: string } } }).Telegram?.WebApp?.initData) {
+    return "telegram";
+  }
+
+  if (search.has("vk_platform") || search.has("sign")) {
+    return "vk";
+  }
+
   return "web";
 }

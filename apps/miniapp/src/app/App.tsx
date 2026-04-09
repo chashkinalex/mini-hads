@@ -14,6 +14,7 @@ import {
   type SessionRecord,
 } from "../shared/api/client";
 import { detectPlatform } from "../platform/detectPlatform";
+import { getMaxStartParam } from "../platform/max";
 import "../shared/ui/app.css";
 
 type DraftAnswers = Partial<Record<HadsQuestionId, HadsAnswers[HadsQuestionId]>>;
@@ -97,8 +98,8 @@ function shouldConfirmBeforeNewPatient(session?: SessionRecord) {
 
 export function App() {
   const search = new URLSearchParams(window.location.search);
-  const token = search.get("token");
-  const launch = search.get("launch") === "1";
+  const token = search.get("token") ?? getMaxStartParam();
+  const launch = search.get("launch") === "1" || Boolean(getMaxStartParam());
   const platform = detectPlatform();
   const [answers, setAnswers] = useState<DraftAnswers>(initialAnswers);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
