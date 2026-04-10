@@ -459,10 +459,18 @@ export function App() {
       await cancelDoctorSession(state.currentToken);
       await createNextPatientSession();
     } catch (error) {
+      const message = error instanceof Error ? error.message : "Не удалось завершить текущий опрос";
+
+      if (message === "Cannot cancel a completed session") {
+        await refreshDoctorDashboard();
+        await createNextPatientSession();
+        return;
+      }
+
       setState({
         ...state,
         loading: false,
-        error: error instanceof Error ? error.message : "Не удалось завершить текущий опрос",
+        error: message,
         showCancelConfirm: false,
       });
     }
