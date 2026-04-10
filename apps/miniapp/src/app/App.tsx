@@ -15,7 +15,7 @@ import {
 } from "../shared/api/client";
 import { detectPlatform } from "../platform/detectPlatform";
 import type { SupportedPlatform } from "../platform/types";
-import { getMaxStartParam } from "../platform/max";
+import { bindMaxBackButton, getMaxStartParam, openExternalUrl, openMaxUrl, prepareMaxWebApp } from "../platform/max";
 import "../shared/ui/app.css";
 
 type DraftAnswers = Partial<Record<HadsQuestionId, HadsAnswers[HadsQuestionId]>>;
@@ -132,6 +132,14 @@ export function App() {
   );
 
   useEffect(() => {
+    if (platform !== "max") {
+      return;
+    }
+
+    prepareMaxWebApp();
+  }, [platform]);
+
+  useEffect(() => {
     let cancelled = false;
 
     function syncLaunchContext() {
@@ -214,6 +222,22 @@ export function App() {
   const currentQuestion = hadsQuestions[currentQuestionIndex];
   const answeredCount = hadsQuestions.filter((question) => answers[question.id] !== undefined).length;
   const isLastQuestion = currentQuestionIndex === hadsQuestions.length - 1;
+
+  useEffect(() => {
+    if (platform !== "max") {
+      return;
+    }
+
+    if (state.mode !== "patient" || state.result) {
+      return bindMaxBackButton(false, () => {});
+    }
+
+    const canGoBack = currentQuestionIndex > 0;
+
+    return bindMaxBackButton(canGoBack, () => {
+      setCurrentQuestionIndex((prev) => Math.max(prev - 1, 0));
+    });
+  }, [platform, state.mode, state.mode === "patient" ? state.result : null, currentQuestionIndex]);
 
   useEffect(() => {
     if (state.mode === "patient") {
@@ -454,7 +478,19 @@ export function App() {
 
   function launchPatientFlow(nextPlatform: "max" | "telegram" | "vk" | "web") {
     if (state.mode !== "join") return;
-    window.location.href = getPlatformLaunchLink(nextPlatform, state.token);
+    const targetUrl = getPlatformLaunchLink(nextPlatform, state.token);
+
+    if (nextPlatform === "max") {
+      openMaxUrl(targetUrl);
+      return;
+    }
+
+    if (platform === "max") {
+      openExternalUrl(targetUrl);
+      return;
+    }
+
+    window.location.href = targetUrl;
   }
 
   if (state.mode === "join") {
