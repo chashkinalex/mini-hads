@@ -2,6 +2,7 @@ import { z } from "zod";
 import { prisma } from "../../lib/prisma";
 import { validateMaxLaunchData } from "./maxValidation";
 import { createDoctorAccessToken } from "./session";
+import { validateTelegramLaunchData } from "./telegramValidation";
 
 const platformLoginSchema = z.object({
   platform: z.enum(["telegram", "max", "vk", "web"]),
@@ -25,6 +26,17 @@ export async function loginDoctor(input: PlatformLoginInput) {
     if (!validatedUser) {
       if (!allowDevAuth) {
         throw new Error("MAX launch data validation failed");
+      }
+    } else {
+      platformUserId = validatedUser.id;
+      displayName = validatedUser.displayName;
+    }
+  } else if (parsed.platform === "telegram" && process.env.TELEGRAM_BOT_TOKEN) {
+    const validatedUser = validateTelegramLaunchData(parsed.launchData.raw, process.env.TELEGRAM_BOT_TOKEN);
+
+    if (!validatedUser) {
+      if (!allowDevAuth) {
+        throw new Error("Telegram launch data validation failed");
       }
     } else {
       platformUserId = validatedUser.id;

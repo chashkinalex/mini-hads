@@ -27,6 +27,7 @@ Create:
 - `ALLOW_DEV_AUTH` = `false`
 - `SESSION_SECRET` = long random secret for signed doctor session cookies
 - `MAX_BOT_TOKEN` = production token of your MAX bot
+- `TELEGRAM_BOT_TOKEN` = production token of your Telegram bot
 
 ### One-time setup command
 
@@ -48,6 +49,8 @@ npm run db:push
 
 - `VITE_API_URL` = your Railway API URL
 - `VITE_MAX_BOT_NAME` = public MAX bot name used for deep links
+- `VITE_TELEGRAM_BOT_USERNAME` = Telegram bot username used for deep links
+- `VITE_TELEGRAM_APP_NAME` = Telegram Mini App short name for direct links
 
 Example:
 

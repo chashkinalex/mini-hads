@@ -16,6 +16,7 @@ import {
 import { detectPlatform } from "../platform/detectPlatform";
 import type { SupportedPlatform } from "../platform/types";
 import { bindMaxBackButton, getMaxStartParam, openExternalUrl, openMaxUrl, prepareMaxWebApp } from "../platform/max";
+import { getTelegramStartParam, prepareTelegramWebApp } from "../platform/telegram";
 import "../shared/ui/app.css";
 
 type DraftAnswers = Partial<Record<HadsQuestionId, HadsAnswers[HadsQuestionId]>>;
@@ -76,9 +77,19 @@ function getStatusLabel(status: string) {
 function getPlatformLaunchLink(platform: "max" | "telegram" | "vk" | "web", token: string) {
   const encodedToken = encodeURIComponent(token);
   const maxBotName = import.meta.env.VITE_MAX_BOT_NAME;
+  const telegramBotUsername = import.meta.env.VITE_TELEGRAM_BOT_USERNAME;
+  const telegramAppName = import.meta.env.VITE_TELEGRAM_APP_NAME;
 
   if (platform === "max" && maxBotName) {
     return `https://max.ru/${maxBotName}?startapp=${encodedToken}`;
+  }
+
+  if (platform === "telegram" && telegramBotUsername) {
+    if (telegramAppName) {
+      return `https://t.me/${telegramBotUsername}/${telegramAppName}?startapp=${encodedToken}`;
+    }
+
+    return `https://t.me/${telegramBotUsername}?startattach=${encodedToken}`;
   }
 
   const url = new URL(window.location.origin);
@@ -100,10 +111,11 @@ function shouldConfirmBeforeNewPatient(session?: SessionRecord) {
 function getLaunchContext(): { token: string | null; launch: boolean; platform: SupportedPlatform } {
   const search = new URLSearchParams(window.location.search);
   const maxToken = getMaxStartParam();
+  const telegramToken = getTelegramStartParam();
 
   return {
-    token: search.get("token") ?? maxToken,
-    launch: search.get("launch") === "1" || Boolean(maxToken),
+    token: search.get("token") ?? maxToken ?? telegramToken,
+    launch: search.get("launch") === "1" || Boolean(maxToken) || Boolean(telegramToken),
     platform: detectPlatform(),
   };
 }
@@ -133,6 +145,10 @@ export function App() {
 
   useEffect(() => {
     if (platform !== "max") {
+      if (platform === "telegram") {
+        prepareTelegramWebApp();
+      }
+
       return;
     }
 

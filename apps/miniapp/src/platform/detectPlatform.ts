@@ -20,6 +20,10 @@ export function detectPlatform(): SupportedPlatform {
     return "telegram";
   }
 
+  if (search.has("tgWebAppStartParam")) {
+    return "telegram";
+  }
+
   if (search.has("vk_platform") || search.has("sign")) {
     return "vk";
   }
