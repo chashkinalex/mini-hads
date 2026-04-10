@@ -92,7 +92,7 @@ function getPlatformLaunchLink(platform: "max" | "telegram" | "vk" | "web", toke
     return `https://t.me/${telegramBotUsername}?startattach=${encodedToken}`;
   }
 
-  const url = new URL(window.location.origin);
+  const url = new URL("/survey", window.location.origin);
   url.searchParams.set("token", token);
   url.searchParams.set("launch", "1");
 
@@ -112,10 +112,12 @@ function getLaunchContext(): { token: string | null; launch: boolean; platform: 
   const search = new URLSearchParams(window.location.search);
   const maxToken = getMaxStartParam();
   const telegramToken = getTelegramStartParam();
+  const pathname = typeof window !== "undefined" ? window.location.pathname : "/";
+  const explicitLaunchPath = pathname === "/survey";
 
   return {
     token: search.get("token") ?? maxToken ?? telegramToken,
-    launch: search.get("launch") === "1" || Boolean(maxToken) || Boolean(telegramToken),
+    launch: explicitLaunchPath || search.get("launch") === "1" || Boolean(maxToken) || Boolean(telegramToken),
     platform: detectPlatform(),
   };
 }
@@ -232,7 +234,7 @@ export function App() {
 
   const patientJoinLink = useMemo(() => {
     if (state.mode !== "doctor" || !state.currentToken) return null;
-    return `${window.location.origin}/?token=${state.currentToken}`;
+    return new URL(`/join?token=${state.currentToken}`, window.location.origin).toString();
   }, [state]);
 
   const currentQuestion = hadsQuestions[currentQuestionIndex];
