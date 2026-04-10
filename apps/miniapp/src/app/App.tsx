@@ -285,6 +285,32 @@ export function App() {
     };
   }, [state.mode === "doctor" ? state.doctor?.id : null]);
 
+  useEffect(() => {
+    if (state.mode !== "doctor" || !state.doctor) {
+      return;
+    }
+
+    const refreshSafely = () => {
+      void refreshDoctorDashboard().catch(() => {
+        // MAX webviews can be flaky with long-lived connections; polling is best-effort.
+      });
+    };
+
+    const intervalId = window.setInterval(refreshSafely, 4000);
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        refreshSafely();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [state.mode === "doctor" ? state.doctor?.id : null]);
+
   async function refreshDoctorDashboard() {
     const dashboard = await getDoctorResults();
 
