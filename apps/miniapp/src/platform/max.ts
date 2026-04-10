@@ -39,7 +39,7 @@ export function getMaxLaunchData() {
 export function getMaxStartParam() {
   if (typeof window !== "undefined") {
     const search = new URLSearchParams(window.location.search);
-    const directParam = search.get("WebAppStartParam") || search.get("start_param") || search.get("startapp") || search.get("token");
+    const directParam = search.get("WebAppStartParam") || search.get("start_param") || search.get("startapp");
 
     if (directParam) {
       return directParam;
