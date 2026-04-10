@@ -494,24 +494,35 @@ export function App() {
     await navigator.clipboard.writeText(patientJoinLink);
   }
 
-  function launchPatientFlow(nextPlatform: "max" | "telegram" | "vk" | "web") {
+  function getJoinNavigationProps(nextPlatform: "max" | "telegram" | "vk" | "web") {
     if (state.mode !== "join") return;
     const targetUrl = getPlatformLaunchLink(nextPlatform, state.token);
 
-    if (nextPlatform === "max") {
-      openMaxUrl(targetUrl);
-      return;
-    }
+    const onClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
+      if (nextPlatform === "max" && platform === "max") {
+        event.preventDefault();
+        openMaxUrl(targetUrl);
+        return;
+      }
 
-    if (platform === "max") {
-      openExternalUrl(targetUrl);
-      return;
-    }
+      if (platform === "max") {
+        event.preventDefault();
+        openExternalUrl(targetUrl);
+      }
+    };
 
-    window.location.href = targetUrl;
+    return {
+      href: targetUrl,
+      onClick,
+    };
   }
 
   if (state.mode === "join") {
+    const maxLinkProps = getJoinNavigationProps("max");
+    const telegramLinkProps = getJoinNavigationProps("telegram");
+    const vkLinkProps = getJoinNavigationProps("vk");
+    const webLinkProps = getJoinNavigationProps("web");
+
     return (
       <main className="shell shell-patient">
         <section className="hero patient-hero stack">
@@ -525,26 +536,26 @@ export function App() {
           </p>
           {state.error ? <p>{state.error}</p> : null}
           <div className="join-grid">
-            <button className="card join-card" onClick={() => launchPatientFlow("max")}>
+            <a className="card join-card" href={maxLinkProps?.href} onClick={maxLinkProps?.onClick}>
               <span className="pill">MAX</span>
               <strong>Открыть в MAX</strong>
               <span className="muted">Основной сценарий для Mini App.</span>
-            </button>
-            <button className="card join-card" onClick={() => launchPatientFlow("telegram")}>
+            </a>
+            <a className="card join-card" href={telegramLinkProps?.href} onClick={telegramLinkProps?.onClick}>
               <span className="pill">Telegram</span>
               <strong>Открыть в Telegram</strong>
               <span className="muted">Используйте для теста контейнера Telegram Mini Apps.</span>
-            </button>
-            <button className="card join-card" onClick={() => launchPatientFlow("vk")}>
+            </a>
+            <a className="card join-card" href={vkLinkProps?.href} onClick={vkLinkProps?.onClick}>
               <span className="pill">VK</span>
               <strong>Открыть в VK</strong>
               <span className="muted">Подходит для сценария VK Mini Apps.</span>
-            </button>
-            <button className="card join-card accent-panel" onClick={() => launchPatientFlow("web")}>
+            </a>
+            <a className="card join-card accent-panel" href={webLinkProps?.href} onClick={webLinkProps?.onClick}>
               <span className="pill">Веб</span>
               <strong>Продолжить в браузере</strong>
               <span className="muted">Удобно для локальной разработки и проверки flow.</span>
-            </button>
+            </a>
           </div>
         </section>
       </main>
