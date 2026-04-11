@@ -702,35 +702,6 @@ function HadsApp() {
           <h1 className="hero-title">{state.result ? "Результаты HADS" : "Госпитальная шкала тревоги и депрессии"}</h1>
           {!state.result ? (
             <>
-              <div className="patient-intro-compact">
-                <p className="hero-copy muted">Отвечайте по самочувствию за последнюю неделю.</p>
-                <button
-                  className="info-button"
-                  type="button"
-                  aria-expanded={showPatientIntro}
-                  aria-label="Показать инструкцию"
-                  onClick={() => setShowPatientIntro((value) => !value)}
-                >
-                  i
-                </button>
-              </div>
-              {showPatientIntro ? (
-                <div className="card hero-copy muted stack intro-copy">
-                  <p>
-                    Врачам известно, что эмоции играют важную роль при большинстве заболеваний. Если ваш врач узнает об
-                    этих чувствах, он сможет лучше вам помочь. Эта анкета предназначена для того, чтобы ваш врач был более
-                    подробно осведомлен о вашем самочувствии.
-                  </p>
-                  <p>
-                    Прочитайте каждый пункт и поставьте отметку напротив ответа, наиболее соответствующего тому, как вы
-                    себя чувствовали на прошлой неделе.
-                  </p>
-                  <p>
-                    Не задумывайтесь слишком долго над своими ответами: ваша первая реакция на каждый пункт, вероятно,
-                    будет более точной, чем тщательно продуманный ответ.
-                  </p>
-                </div>
-              ) : null}
               <div className="patient-progress card accent-panel">
                 <div>
                   <strong>Вопрос {currentQuestionIndex + 1} из 14</strong>
@@ -874,7 +845,38 @@ function HadsApp() {
                     {state.loading ? "Отправляем..." : "Отправить врачу"}
                   </button>
                 ) : (
-                  <p className="muted">Выберите вариант ответа, чтобы перейти к следующему вопросу.</p>
+                  <div className="patient-answer-hint">
+                    <p className="muted">Выберите вариант ответа, чтобы перейти к следующему вопросу.</p>
+                    <div className="patient-intro-compact">
+                      <p className="muted">Отвечайте по самочувствию за последнюю неделю.</p>
+                      <button
+                        className="info-button"
+                        type="button"
+                        aria-expanded={showPatientIntro}
+                        aria-label="Показать инструкцию"
+                        onClick={() => setShowPatientIntro((value) => !value)}
+                      >
+                        i
+                      </button>
+                    </div>
+                    {showPatientIntro ? (
+                      <div className="card hero-copy muted stack intro-copy">
+                        <p>
+                          Врачам известно, что эмоции играют важную роль при большинстве заболеваний. Если ваш врач
+                          узнает об этих чувствах, он сможет лучше вам помочь. Эта анкета предназначена для того, чтобы
+                          ваш врач был более подробно осведомлен о вашем самочувствии.
+                        </p>
+                        <p>
+                          Прочитайте каждый пункт и поставьте отметку напротив ответа, наиболее соответствующего тому,
+                          как вы себя чувствовали на прошлой неделе.
+                        </p>
+                        <p>
+                          Не задумывайтесь слишком долго над своими ответами: ваша первая реакция на каждый пункт,
+                          вероятно, будет более точной, чем тщательно продуманный ответ.
+                        </p>
+                      </div>
+                    ) : null}
+                  </div>
                 )}
               </div>
             </>

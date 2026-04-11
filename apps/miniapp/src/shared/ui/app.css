@@ -851,6 +851,16 @@ input {
   text-align: right;
 }
 
+.patient-answer-hint {
+  display: grid;
+  gap: 10px;
+  max-width: 760px;
+}
+
+.patient-answer-hint p {
+  margin: 0;
+}
+
 .patient-intro-compact {
   display: flex;
   justify-content: space-between;
