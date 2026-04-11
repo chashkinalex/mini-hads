@@ -195,6 +195,7 @@ function HadsApp() {
   const [showDoctorAnswers, setShowDoctorAnswers] = useState(false);
   const [showPatientAnswers, setShowPatientAnswers] = useState(false);
   const [showPatientHistory, setShowPatientHistory] = useState(false);
+  const [showPatientIntro, setShowPatientIntro] = useState(false);
   const [patientHistory, setPatientHistory] = useState<PatientHistoryItem[]>(() => loadPatientHistory());
   const [doctorView, setDoctorView] = useState<"current" | "results">("current");
   const [selectedDoctorResultId, setSelectedDoctorResultId] = useState<string | null>(null);
@@ -473,6 +474,7 @@ function HadsApp() {
       setCurrentQuestionIndex(0);
       setShowPatientAnswers(false);
       setShowPatientHistory(false);
+      setShowPatientIntro(false);
 
       setState({
         mode: "patient",
@@ -700,29 +702,41 @@ function HadsApp() {
           <h1 className="hero-title">{state.result ? "Результаты HADS" : "Госпитальная шкала тревоги и депрессии"}</h1>
           {!state.result ? (
             <>
-              <div className="hero-copy muted stack intro-copy">
-                <p>
-                  Врачам известно, что эмоции играют важную роль при большинстве заболеваний. Если ваш врач узнает об
-                  этих чувствах, он сможет лучше вам помочь. Эта анкета предназначена для того, чтобы ваш врач был более
-                  подробно осведомлен о вашем самочувствии.
-                </p>
-                <p>
-                  Прочитайте каждый пункт и поставьте отметку напротив ответа, наиболее соответствующего тому, как вы
-                  себя чувствовали на прошлой неделе.
-                </p>
-                <p>
-                  Не задумывайтесь слишком долго над своими ответами: ваша первая реакция на каждый пункт, вероятно,
-                  будет более точной, чем тщательно продуманный ответ.
-                </p>
+              <div className="patient-intro-compact">
+                <p className="hero-copy muted">Отвечайте по самочувствию за последнюю неделю.</p>
+                <button
+                  className="info-button"
+                  type="button"
+                  aria-expanded={showPatientIntro}
+                  aria-label="Показать инструкцию"
+                  onClick={() => setShowPatientIntro((value) => !value)}
+                >
+                  i
+                </button>
               </div>
+              {showPatientIntro ? (
+                <div className="card hero-copy muted stack intro-copy">
+                  <p>
+                    Врачам известно, что эмоции играют важную роль при большинстве заболеваний. Если ваш врач узнает об
+                    этих чувствах, он сможет лучше вам помочь. Эта анкета предназначена для того, чтобы ваш врач был более
+                    подробно осведомлен о вашем самочувствии.
+                  </p>
+                  <p>
+                    Прочитайте каждый пункт и поставьте отметку напротив ответа, наиболее соответствующего тому, как вы
+                    себя чувствовали на прошлой неделе.
+                  </p>
+                  <p>
+                    Не задумывайтесь слишком долго над своими ответами: ваша первая реакция на каждый пункт, вероятно,
+                    будет более точной, чем тщательно продуманный ответ.
+                  </p>
+                </div>
+              ) : null}
               <div className="patient-progress card accent-panel">
                 <div>
                   <strong>Вопрос {currentQuestionIndex + 1} из 14</strong>
-                  <div className="muted">Среднее время прохождения: 3-5 минут</div>
-                </div>
-                <div className="patient-progress__meta">
-                  <div className="muted">Отвечено</div>
-                  <div className="score-small">{answeredCount}/14</div>
+                  <div className="patient-progress-bar" aria-label={`Прогресс ${answeredCount} из 14`}>
+                    <i style={{ width: `${(answeredCount / hadsQuestions.length) * 100}%` }} />
+                  </div>
                 </div>
               </div>
             </>
@@ -857,7 +871,7 @@ function HadsApp() {
               <div className="patient-actions">
                 {isLastQuestion && answers[currentQuestion.id] !== undefined ? (
                   <button className="button button-large" disabled={state.loading} onClick={handleSubmitPatient}>
-                    {state.loading ? "Отправляем..." : "Завершить опрос и отправить врачу"}
+                    {state.loading ? "Отправляем..." : "Отправить врачу"}
                   </button>
                 ) : (
                   <p className="muted">Выберите вариант ответа, чтобы перейти к следующему вопросу.</p>
