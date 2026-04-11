@@ -27,6 +27,7 @@ Create:
 - `ALLOW_DEV_AUTH` = `false`
 - `SESSION_SECRET` = long random secret for signed doctor session cookies
 - `MAX_BOT_TOKEN` = production token of your MAX bot
+- `MAX_WEBHOOK_SECRET` = secret passed by MAX in `X-Max-Bot-Api-Secret`
 - `MINIAPP_URL` = public Vercel URL for doctor cabinet links in bot messages
 - `TELEGRAM_BOT_TOKEN` = production token of your Telegram bot
 

@@ -6,8 +6,31 @@ type MaxNotificationInput = {
   result: HadsScoreResult;
 };
 
+type MaxInlineKeyboardButton =
+  | {
+      type: "link";
+      text: string;
+      url: string;
+    }
+  | {
+      type: "message";
+      text: string;
+    };
+
+type MaxMessageInput = {
+  userId: string;
+  text: string;
+  buttons?: MaxInlineKeyboardButton[][];
+};
+
 function getMiniAppUrl() {
   return process.env.MINIAPP_URL || "https://mini-hads-miniapp.vercel.app";
+}
+
+export function buildPatientJoinUrl(publicToken: string) {
+  const url = new URL("/join", getMiniAppUrl());
+  url.searchParams.set("token", publicToken);
+  return url.toString();
 }
 
 function buildResultMessage(result: HadsScoreResult) {
@@ -24,15 +47,26 @@ function buildResultMessage(result: HadsScoreResult) {
   ].join("\n");
 }
 
-export async function notifyMaxDoctorAboutResult(input: MaxNotificationInput) {
+export async function sendMaxMessage(input: MaxMessageInput) {
   const botToken = process.env.MAX_BOT_TOKEN;
 
-  if (input.platform !== "max" || !botToken) {
+  if (!botToken) {
     return;
   }
 
   const url = new URL("https://platform-api.max.ru/messages");
-  url.searchParams.set("user_id", input.platformUserId);
+  url.searchParams.set("user_id", input.userId);
+
+  const attachments = input.buttons
+    ? [
+        {
+          type: "inline_keyboard",
+          payload: {
+            buttons: input.buttons,
+          },
+        },
+      ]
+    : undefined;
 
   const response = await fetch(url, {
     method: "POST",
@@ -41,7 +75,8 @@ export async function notifyMaxDoctorAboutResult(input: MaxNotificationInput) {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      text: buildResultMessage(input.result),
+      text: input.text,
+      attachments,
       format: "markdown",
       notify: true,
       disable_link_preview: true,
@@ -52,4 +87,30 @@ export async function notifyMaxDoctorAboutResult(input: MaxNotificationInput) {
     const text = await response.text();
     throw new Error(text || `MAX notification failed: ${response.status}`);
   }
+}
+
+export async function notifyMaxDoctorAboutResult(input: MaxNotificationInput) {
+  if (input.platform !== "max") {
+    return;
+  }
+
+  await sendMaxMessage({
+    userId: input.platformUserId,
+    text: buildResultMessage(input.result),
+    buttons: [
+      [
+        {
+          type: "link",
+          text: "Открыть кабинет",
+          url: getMiniAppUrl(),
+        },
+      ],
+      [
+        {
+          type: "message",
+          text: "Новый пациент",
+        },
+      ],
+    ],
+  });
 }

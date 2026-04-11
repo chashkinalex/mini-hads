@@ -4,6 +4,7 @@ import { z } from "zod";
 import { requireDoctor } from "./modules/auth/request";
 import { loginDoctor } from "./modules/auth/service";
 import { getDoctorDashboard } from "./modules/doctors/service";
+import { handleMaxWebhookUpdate } from "./modules/maxBot/webhook";
 import { subscribeDoctor } from "./modules/realtime/broker";
 import { cancelSession, createSession, getSessionByToken, openSession, submitSession } from "./modules/sessions/service";
 
@@ -31,6 +32,23 @@ app.use(express.json());
 
 app.get("/health", (_request, response) => {
   response.json({ ok: true });
+});
+
+app.post("/max/webhook", async (request, response) => {
+  const webhookSecret = process.env.MAX_WEBHOOK_SECRET;
+
+  if (webhookSecret && request.header("X-Max-Bot-Api-Secret") !== webhookSecret) {
+    response.status(401).send("Unauthorized");
+    return;
+  }
+
+  try {
+    await handleMaxWebhookUpdate(request.body);
+    response.json({ ok: true });
+  } catch (error) {
+    console.error("MAX webhook failed", error);
+    response.status(500).send(error instanceof Error ? error.message : "MAX webhook failed");
+  }
 });
 
 app.post("/auth/platform-login", async (request, response) => {
