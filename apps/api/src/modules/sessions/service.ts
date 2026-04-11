@@ -1,6 +1,7 @@
 import { scoreHadsAnswers, type HadsAnswers } from "@mini-hads/domain";
 import { randomUUID } from "node:crypto";
 import { prisma } from "../../lib/prisma";
+import { notifyMaxDoctorAboutResult } from "../maxBot/service";
 import { publishDoctorEvent } from "../realtime/broker";
 
 export async function createSession(doctorId: string) {
@@ -53,6 +54,7 @@ export async function getSessionByToken(publicToken: string) {
 export async function submitSession(publicToken: string, answers: HadsAnswers) {
   const session = await prisma.surveySession.findUnique({
     where: { publicToken },
+    include: { doctor: true },
   });
 
   if (!session) {
@@ -89,6 +91,14 @@ export async function submitSession(publicToken: string, answers: HadsAnswers) {
   publishDoctorEvent(session.doctorId, "session_submitted", {
     sessionId: session.id,
     publicToken: session.publicToken,
+  });
+
+  void notifyMaxDoctorAboutResult({
+    platform: session.doctor.platform,
+    platformUserId: session.doctor.platformUserId,
+    result,
+  }).catch((error) => {
+    console.error("Failed to send MAX doctor notification", error);
   });
 
   return result;
