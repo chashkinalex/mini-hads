@@ -3,6 +3,7 @@ import express from "express";
 import { z } from "zod";
 import { requireDoctor } from "./modules/auth/request";
 import { loginDoctor } from "./modules/auth/service";
+import { getAdminStats } from "./modules/admin/service";
 import { getDoctorDashboard } from "./modules/doctors/service";
 import { handleMaxWebhookUpdate } from "./modules/maxBot/webhook";
 import { subscribeDoctor } from "./modules/realtime/broker";
@@ -32,6 +33,23 @@ app.use(express.json());
 
 app.get("/health", (_request, response) => {
   response.json({ ok: true });
+});
+
+app.get("/admin/stats", async (request, response) => {
+  const adminToken = process.env.ADMIN_TOKEN;
+  const authorization = request.header("Authorization");
+  const providedToken = authorization?.startsWith("Bearer ") ? authorization.slice("Bearer ".length) : null;
+
+  if (!adminToken || providedToken !== adminToken) {
+    response.status(401).send("Unauthorized");
+    return;
+  }
+
+  try {
+    response.json(await getAdminStats());
+  } catch (error) {
+    response.status(500).send(error instanceof Error ? error.message : "Failed to load admin stats");
+  }
 });
 
 app.post("/max/webhook", async (request, response) => {

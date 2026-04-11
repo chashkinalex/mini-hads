@@ -17,6 +17,44 @@ export type SessionRecord = {
   expiresAt: string;
 };
 
+export type AdminStats = {
+  generatedAt: string;
+  summary: {
+    totalDoctors: number;
+    activeDoctors7Days: number;
+    activeDoctors30Days: number;
+    createdSessions: number;
+    openedSessions: number;
+    submittedSessions: number;
+    cancelledSessions: number;
+    startRate: number;
+    completionRate: number;
+    completionFromStartedRate: number;
+  };
+  levels: {
+    anxiety: Record<string, number>;
+    depression: Record<string, number>;
+  };
+  daily: Array<{
+    date: string;
+    created: number;
+    started: number;
+    submitted: number;
+  }>;
+  doctors: Array<{
+    id: string;
+    displayName: string;
+    platform: string;
+    createdAt: string;
+    sessionsCreated: number;
+    sessionsStarted: number;
+    sessionsSubmitted: number;
+    completionRate: number;
+    lastSessionAt: string | null;
+    lastSubmittedAt: string | null;
+  }>;
+};
+
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
 const ACCESS_TOKEN_STORAGE_KEY = "mini_hads_access_token";
 
@@ -128,4 +166,12 @@ export function subscribeDoctorEvents(onEvent: (event: MessageEvent<string>) => 
   source.addEventListener("session_cancelled", onEvent);
 
   return source;
+}
+
+export function getAdminStats(adminToken: string) {
+  return request<AdminStats>("/admin/stats", {
+    headers: {
+      Authorization: `Bearer ${adminToken}`,
+    },
+  });
 }

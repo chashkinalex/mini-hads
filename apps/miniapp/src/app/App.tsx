@@ -4,6 +4,7 @@ import { hadsQuestions, type HadsAnswers, type HadsQuestionId, type HadsScoreRes
 import {
   cancelDoctorSession,
   createDoctorSession,
+  getAdminStats,
   getDoctorResults,
   getPatientSession,
   loginDoctor,
@@ -11,6 +12,7 @@ import {
   submitPatientAnswers,
   subscribeDoctorEvents,
   type Doctor,
+  type AdminStats,
   type SessionRecord,
 } from "../shared/api/client";
 import { detectPlatform } from "../platform/detectPlatform";
@@ -68,6 +70,7 @@ type AppState = DoctorState | JoinState | PatientState;
 
 const initialAnswers: DraftAnswers = {};
 const PATIENT_HISTORY_STORAGE_KEY = "mini_hads_patient_history";
+const ADMIN_TOKEN_STORAGE_KEY = "mini_hads_admin_token";
 
 function formatDateTime(value: string) {
   return new Intl.DateTimeFormat("ru-RU", {
@@ -123,6 +126,10 @@ function getAnswerLabel(questionId: HadsQuestionId, answersSource: HadsAnswers |
   return question.options.find((option) => option.value === answerValue)?.label ?? "Нет ответа";
 }
 
+function isAdminRoute() {
+  return typeof window !== "undefined" && window.location.pathname === "/admin";
+}
+
 function getPlatformLaunchLink(platform: "max" | "telegram" | "vk" | "web", token: string) {
   const encodedToken = encodeURIComponent(token);
   const maxBotName = import.meta.env.VITE_MAX_BOT_NAME;
@@ -172,6 +179,14 @@ function getLaunchContext(): { token: string | null; launch: boolean; platform: 
 }
 
 export function App() {
+  if (isAdminRoute()) {
+    return <AdminApp />;
+  }
+
+  return <HadsApp />;
+}
+
+function HadsApp() {
   const initialContext = getLaunchContext();
   const platform = initialContext.platform;
   const [answers, setAnswers] = useState<DraftAnswers>(initialAnswers);
@@ -1032,6 +1047,234 @@ export function App() {
             Новый пациент
           </button>
         </div>
+      </section>
+    </main>
+  );
+}
+
+function getStoredAdminToken() {
+  if (typeof window === "undefined") return "";
+  return window.localStorage.getItem(ADMIN_TOKEN_STORAGE_KEY) ?? "";
+}
+
+function saveStoredAdminToken(token: string) {
+  if (typeof window === "undefined") return;
+
+  if (token) {
+    window.localStorage.setItem(ADMIN_TOKEN_STORAGE_KEY, token);
+    return;
+  }
+
+  window.localStorage.removeItem(ADMIN_TOKEN_STORAGE_KEY);
+}
+
+function getLevelLabel(level: string) {
+  if (level === "normal") return "Норма";
+  if (level === "borderline") return "Субклинически";
+  if (level === "clinical") return "Клинически";
+  return level;
+}
+
+function getLevelCount(levels: Record<string, number>, level: string) {
+  return levels[level] ?? 0;
+}
+
+function AdminApp() {
+  const [adminToken, setAdminToken] = useState(() => getStoredAdminToken());
+  const [tokenDraft, setTokenDraft] = useState(() => getStoredAdminToken());
+  const [stats, setStats] = useState<AdminStats | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function loadStats(token = adminToken) {
+    if (!token) {
+      setStats(null);
+      setError("Введите ADMIN_TOKEN, чтобы открыть статистику.");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await getAdminStats(token);
+      setStats(response);
+      setAdminToken(token);
+      saveStoredAdminToken(token);
+    } catch (loadError) {
+      setStats(null);
+      setError(loadError instanceof Error ? loadError.message : "Не удалось загрузить статистику");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (adminToken) {
+      void loadStats(adminToken);
+    }
+  }, []);
+
+  const maxDailyValue = Math.max(1, ...(stats?.daily.flatMap((item) => [item.created, item.started, item.submitted]) ?? [1]));
+
+  return (
+    <main className="shell admin-shell">
+      <section className="hero admin-hero stack">
+        <div className="topline">
+          <span className="pill">Админ</span>
+          <span className="inline-note">Praxium HADS</span>
+        </div>
+        <h1 className="hero-title">Статистика использования</h1>
+        <p className="hero-copy muted">
+          Здесь собраны обезличенные метрики: врачи, сессии, завершённые HADS, конверсия и распределение результатов.
+        </p>
+
+        <form
+          className="card admin-auth"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void loadStats(tokenDraft.trim());
+          }}
+        >
+          <label>
+            <span className="muted">ADMIN_TOKEN</span>
+            <input
+              value={tokenDraft}
+              type="password"
+              placeholder="Введите админ-токен"
+              onChange={(event) => setTokenDraft(event.target.value)}
+            />
+          </label>
+          <button className="button" type="submit" disabled={loading}>
+            {loading ? "Загружаем..." : "Открыть статистику"}
+          </button>
+        </form>
+
+        {error ? <p>{error}</p> : null}
+
+        {stats ? (
+          <>
+            <div className="admin-metrics">
+              <article className="card admin-metric">
+                <span className="muted">Врачей всего</span>
+                <strong>{stats.summary.totalDoctors}</strong>
+                <small>Активны 7 дней: {stats.summary.activeDoctors7Days}</small>
+              </article>
+              <article className="card admin-metric">
+                <span className="muted">Создано QR</span>
+                <strong>{stats.summary.createdSessions}</strong>
+                <small>За всё время</small>
+              </article>
+              <article className="card admin-metric">
+                <span className="muted">Пациентов начали</span>
+                <strong>{stats.summary.openedSessions}</strong>
+                <small>{stats.summary.startRate}% от созданных</small>
+              </article>
+              <article className="card admin-metric accent-panel">
+                <span className="muted">Пациентов завершили</span>
+                <strong>{stats.summary.submittedSessions}</strong>
+                <small>{stats.summary.completionRate}% от созданных</small>
+              </article>
+            </div>
+
+            <div className="split">
+              <article className="card stack">
+                <h2 className="section-title">Воронка</h2>
+                <div className="admin-funnel">
+                  <div>
+                    <span>QR создан</span>
+                    <strong>{stats.summary.createdSessions}</strong>
+                    <i style={{ width: "100%" }} />
+                  </div>
+                  <div>
+                    <span>Пациент начал</span>
+                    <strong>{stats.summary.openedSessions}</strong>
+                    <i style={{ width: `${stats.summary.startRate}%` }} />
+                  </div>
+                  <div>
+                    <span>Опрос завершён</span>
+                    <strong>{stats.summary.submittedSessions}</strong>
+                    <i style={{ width: `${stats.summary.completionRate}%` }} />
+                  </div>
+                </div>
+                <p className="muted">Завершение от начавших: {stats.summary.completionFromStartedRate}%</p>
+              </article>
+
+              <article className="card stack">
+                <h2 className="section-title">Распределение результатов</h2>
+                <div className="admin-levels">
+                  {(["normal", "borderline", "clinical"] as const).map((level) => (
+                    <div key={level}>
+                      <span>{getLevelLabel(level)}</span>
+                      <strong>Т {getLevelCount(stats.levels.anxiety, level)} / Д {getLevelCount(stats.levels.depression, level)}</strong>
+                    </div>
+                  ))}
+                </div>
+              </article>
+            </div>
+
+            <article className="card stack">
+              <h2 className="section-title">Динамика за 14 дней</h2>
+              <div className="admin-chart">
+                {stats.daily.map((day) => (
+                  <div key={day.date} className="admin-chart-day">
+                    <div className="admin-chart-bars">
+                      <i className="admin-chart-created" style={{ height: `${(day.created / maxDailyValue) * 100}%` }} />
+                      <i className="admin-chart-started" style={{ height: `${(day.started / maxDailyValue) * 100}%` }} />
+                      <i className="admin-chart-submitted" style={{ height: `${(day.submitted / maxDailyValue) * 100}%` }} />
+                    </div>
+                    <span>{day.date.slice(5)}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="admin-legend">
+                <span><i className="admin-chart-created" />Создано</span>
+                <span><i className="admin-chart-started" />Начато</span>
+                <span><i className="admin-chart-submitted" />Завершено</span>
+              </div>
+            </article>
+
+            <article className="card stack">
+              <div className="doctor-results-head">
+                <div>
+                  <span className="pill">Топ 20</span>
+                  <h2 className="section-title">Активность врачей</h2>
+                </div>
+                <button className="button secondary" type="button" onClick={() => void loadStats()}>
+                  Обновить
+                </button>
+              </div>
+              <div className="admin-table">
+                <div className="admin-table-row admin-table-head">
+                  <span>Врач</span>
+                  <span>Платформа</span>
+                  <span>QR</span>
+                  <span>Начато</span>
+                  <span>Завершено</span>
+                  <span>Последняя активность</span>
+                </div>
+                {stats.doctors.length === 0 ? (
+                  <p className="muted">Врачей пока нет.</p>
+                ) : (
+                  stats.doctors.map((doctor) => (
+                    <div key={doctor.id} className="admin-table-row">
+                      <span>
+                        <strong>{doctor.displayName}</strong>
+                        <small className="muted">{doctor.completionRate}% завершений</small>
+                      </span>
+                      <span>{getPlatformLabel(doctor.platform)}</span>
+                      <span>{doctor.sessionsCreated}</span>
+                      <span>{doctor.sessionsStarted}</span>
+                      <span>{doctor.sessionsSubmitted}</span>
+                      <span>{doctor.lastSessionAt ? formatDateTime(doctor.lastSessionAt) : "Нет"}</span>
+                    </div>
+                  ))
+                )}
+              </div>
+              <p className="muted">Обновлено: {formatDateTime(stats.generatedAt)}</p>
+            </article>
+          </>
+        ) : null}
       </section>
     </main>
   );
