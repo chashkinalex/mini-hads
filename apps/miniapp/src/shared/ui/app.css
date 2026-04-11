@@ -264,6 +264,129 @@ input {
   gap: 18px;
 }
 
+.doctor-shell {
+  max-width: 760px;
+  padding-bottom: 104px;
+}
+
+.doctor-hero {
+  min-height: calc(100vh - 56px);
+  justify-content: flex-start;
+  gap: 18px;
+}
+
+.doctor-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.doctor-title {
+  margin: 0;
+  font-size: clamp(3.4rem, 15vw, 6.4rem);
+  line-height: 0.88;
+  letter-spacing: -0.08em;
+}
+
+.doctor-main-card {
+  min-height: 58vh;
+  justify-content: center;
+}
+
+.doctor-qr-frame {
+  min-height: 340px;
+}
+
+.doctor-status-card {
+  min-height: 48vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 14px;
+}
+
+.doctor-status-card h2 {
+  margin: 0;
+  font-size: clamp(2.2rem, 8vw, 4.4rem);
+  line-height: 0.96;
+  letter-spacing: -0.05em;
+}
+
+.doctor-bottom-actions {
+  position: fixed;
+  left: 50%;
+  bottom: 18px;
+  z-index: 30;
+  width: min(720px, calc(100vw - 32px));
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 18px 46px rgba(51, 51, 51, 0.12);
+  backdrop-filter: blur(18px);
+  transform: translateX(-50%);
+}
+
+.doctor-bottom-actions .button {
+  min-height: 52px;
+}
+
+.doctor-result-summary {
+  display: grid;
+  gap: 18px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.doctor-result-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.doctor-result-grid > span {
+  min-height: 210px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 22px;
+  border: 1px solid var(--border);
+  border-radius: 28px;
+  background: var(--surface-muted);
+}
+
+.doctor-result-grid > span:last-child {
+  background: var(--surface-accent);
+}
+
+.doctor-result-grid strong {
+  font-size: clamp(3rem, 12vw, 5.4rem);
+  line-height: 0.88;
+  letter-spacing: -0.08em;
+}
+
+.doctor-result-grid small {
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1.35;
+}
+
+.doctor-answers-list {
+  max-height: 42vh;
+  overflow: auto;
+  padding-right: 4px;
+}
+
 .doctor-lead {
   min-height: 100%;
 }
@@ -549,6 +672,34 @@ input {
   .split,
   .join-grid {
     grid-template-columns: 1fr;
+  }
+
+  .doctor-shell {
+    padding: 12px 12px 104px;
+  }
+
+  .doctor-hero {
+    min-height: calc(100vh - 24px);
+    border-radius: 30px;
+    padding: 18px;
+  }
+
+  .doctor-main-card {
+    min-height: 56vh;
+    border-radius: 28px;
+    padding: 18px;
+  }
+
+  .doctor-qr-frame {
+    min-height: 300px;
+  }
+
+  .doctor-result-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .doctor-result-grid > span {
+    min-height: 156px;
   }
 
   .patient-progress,

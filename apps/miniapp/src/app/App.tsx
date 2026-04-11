@@ -128,6 +128,7 @@ export function App() {
   const [answers, setAnswers] = useState<DraftAnswers>(initialAnswers);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [isAdvancing, setIsAdvancing] = useState(false);
+  const [showDoctorAnswers, setShowDoctorAnswers] = useState(false);
   const [state, setState] = useState<AppState>(
     initialContext.token
       ? initialContext.launch
@@ -240,6 +241,10 @@ export function App() {
   const currentQuestion = hadsQuestions[currentQuestionIndex];
   const answeredCount = hadsQuestions.filter((question) => answers[question.id] !== undefined).length;
   const isLastQuestion = currentQuestionIndex === hadsQuestions.length - 1;
+
+  useEffect(() => {
+    setShowDoctorAnswers(false);
+  }, [state.mode === "doctor" ? state.currentToken : null]);
 
   useEffect(() => {
     if (platform !== "max") {
@@ -713,20 +718,12 @@ export function App() {
   }
 
   return (
-    <main className="shell">
-      <button className="button floating-action" disabled={state.loading} onClick={handleNewPatient}>
-        Новый пациент
-      </button>
-
-      <section className="hero stack">
-        <div className="topline">
-          <span className="pill">Кабинет врача</span>
-          <span className="inline-note">Realtime</span>
+    <main className="shell doctor-shell">
+      <section className="hero doctor-hero stack">
+        <div className="doctor-header">
+          <h1 className="doctor-title">HADS</h1>
+          <span className="pill">{getPlatformLabel(platform)}</span>
         </div>
-        <h1 className="hero-title">Мини-приложение HADS</h1>
-        <p className="hero-copy muted">
-          Врач создаёт QR-код для нового пациента, а статус и результаты обновляются автоматически без перезагрузки экрана.
-        </p>
         {state.error ? <p>{state.error}</p> : null}
 
         {state.showCancelConfirm ? (
@@ -745,65 +742,38 @@ export function App() {
         ) : null}
 
         {!activeSession ? (
-          <article className="card doctor-empty stack">
+          <article className="card doctor-empty doctor-main-card stack">
             <h2 className="section-title">Новый пациент</h2>
-            <p className="muted">Нажмите кнопку `Новый пациент`, чтобы сгенерировать экран с QR-кодом и начать новый опрос.</p>
+            <p className="muted">Создайте QR-код для прохождения HADS.</p>
           </article>
         ) : (
-          <div className="doctor-showcase">
-            <article className="card doctor-lead stack metric-card">
-              <div className="doctor-lead__head">
-                <div>
-                  <div className="muted">Платформа</div>
-                  <strong>{getPlatformLabel(platform)}</strong>
-                </div>
-                <div>
-                  <div className="muted">Врач</div>
-                  <strong>{state.doctor?.displayName ?? "Загрузка..."}</strong>
-                </div>
-              </div>
-              <h2 className="section-title">{getStatusLabel(activeSession.status)}</h2>
-              <p className="muted">
-                {activeSession.status === "created" && "Покажите пациенту QR-код или отправьте ссылку для перехода к опросу."}
-                {activeSession.status === "opened" && "Пациент открыл опрос. Дождитесь завершения, результаты появятся автоматически."}
-                {activeSession.status === "submitted" && "Опрос завершён. Результаты текущего пациента отображаются на этом экране."}
-                {activeSession.status === "cancelled" && "Текущая сессия завершена без сохранения результатов."}
-              </p>
-              {patientJoinLink ? (
-                <div className="doctor-actions">
-                  <button className="button secondary" onClick={copyPatientLink}>
-                    Скопировать ссылку
-                  </button>
-                </div>
-              ) : null}
+          <article className="card doctor-main-card stack">
+            {activeSession.status === "submitted" && activeResult ? (
+              <>
+                <button
+                  className="doctor-result-summary"
+                  type="button"
+                  onClick={() => setShowDoctorAnswers((value) => !value)}
+                  aria-expanded={showDoctorAnswers}
+                >
+                  <span className="pill">Результаты</span>
+                  <span className="doctor-result-grid">
+                    <span>
+                      <span className="muted">Тревога</span>
+                      <strong>{activeResult.anxietyScore}</strong>
+                      <small>{activeResult.anxietyInterpretation}</small>
+                    </span>
+                    <span>
+                      <span className="muted">Депрессия</span>
+                      <strong>{activeResult.depressionScore}</strong>
+                      <small>{activeResult.depressionInterpretation}</small>
+                    </span>
+                  </span>
+                  <span className="muted">{showDoctorAnswers ? "Скрыть ответы" : "Тапните, чтобы посмотреть ответы"}</span>
+                </button>
 
-              {activeResult ? (
-                <div className="grid">
-                  <div className="card stack metric-card">
-                    <span className="muted">Тревога</span>
-                    <div className="score">{activeResult.anxietyScore}</div>
-                    <strong>{activeResult.anxietyInterpretation}</strong>
-                  </div>
-                  <div className="card stack metric-card accent-panel">
-                    <span className="muted">Депрессия</span>
-                    <div className="score">{activeResult.depressionScore}</div>
-                    <strong>{activeResult.depressionInterpretation}</strong>
-                  </div>
-                </div>
-              ) : null}
-            </article>
-
-            <article className="card qr-card accent-panel stack">
-              {activeSession.status === "submitted" && activeResult ? (
-                <>
-                  <div className="qr-card__top">
-                    <div>
-                      <div className="muted">Результаты текущего пациента</div>
-                      <strong>Ответы и трактовка</strong>
-                    </div>
-                    <span className="pill">Готово</span>
-                  </div>
-                  <div className="answers-list">
+                {showDoctorAnswers ? (
+                  <div className="answers-list doctor-answers-list">
                     {hadsQuestions.map((question) => {
                       const answerValue = activeResult.answers[question.id];
                       const answerLabel = question.options.find((option) => option.value === answerValue)?.label ?? "Нет ответа";
@@ -816,25 +786,44 @@ export function App() {
                       );
                     })}
                   </div>
-                </>
-              ) : (
-                <>
-                  <div className="qr-card__top">
-                    <div>
-                      <div className="muted">QR для пациента</div>
-                      <strong>{activeSession.status === "opened" ? "Пациент проходит опрос" : "Сканируйте камерой телефона"}</strong>
-                    </div>
-                    <span className="pill">{getStatusLabel(activeSession.status)}</span>
+                ) : null}
+              </>
+            ) : activeSession.status === "opened" ? (
+              <div className="doctor-status-card">
+                <span className="pill">Статус</span>
+                <h2>Пациент проходит опрос</h2>
+                <p className="muted">Результаты появятся здесь автоматически после отправки.</p>
+              </div>
+            ) : (
+              <>
+                <div className="qr-card__top">
+                  <div>
+                    <div className="muted">QR для пациента</div>
+                    <strong>Сканируйте камерой телефона</strong>
                   </div>
-                  <div className="qr-frame">
-                    {patientJoinLink ? <QRCodeSVG value={patientJoinLink} size={212} bgColor="#ffffff" fgColor="#15654a" includeMargin /> : <div className="qr-placeholder">QR появится после создания сессии</div>}
-                  </div>
-                  {patientJoinLink ? <code className="code">{patientJoinLink}</code> : <p className="muted">Сначала создайте сессию опроса.</p>}
-                </>
-              )}
-            </article>
-          </div>
+                  <span className="pill">{getStatusLabel(activeSession.status)}</span>
+                </div>
+                <div className="qr-frame doctor-qr-frame">
+                  {patientJoinLink ? <QRCodeSVG value={patientJoinLink} size={238} bgColor="#ffffff" fgColor="#15654a" includeMargin /> : <div className="qr-placeholder">QR появится после создания сессии</div>}
+                </div>
+                {patientJoinLink ? (
+                  <button className="button secondary button-large" onClick={copyPatientLink}>
+                    Скопировать ссылку
+                  </button>
+                ) : null}
+              </>
+            )}
+          </article>
         )}
+
+        <div className="doctor-bottom-actions">
+          <button className="button secondary" type="button">
+            Результаты
+          </button>
+          <button className="button" disabled={state.loading} onClick={handleNewPatient}>
+            Новый пациент
+          </button>
+        </div>
       </section>
     </main>
   );
