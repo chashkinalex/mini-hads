@@ -715,57 +715,6 @@ function HadsApp() {
             <p className="hero-copy muted">Результаты переданы врачу. Вы можете раскрыть ответы и проверить выбранные варианты.</p>
           )}
           {state.error ? <p>{state.error}</p> : null}
-          {patientHistory.length > 0 ? (
-            <div className="patient-history-toolbar">
-              <button className="button secondary" type="button" onClick={() => setShowPatientHistory((value) => !value)}>
-                {showPatientHistory ? "Скрыть историю" : `История (${patientHistory.length})`}
-              </button>
-            </div>
-          ) : null}
-          {showPatientHistory ? (
-            <article className="card patient-history stack">
-              <div>
-                <span className="pill">Сохранено на этом устройстве</span>
-                <h2 className="section-title">История HADS</h2>
-              </div>
-              <div className="patient-history-list">
-                {patientHistory.map((item) => (
-                  <details key={item.id} className="patient-history-item">
-                    <summary>
-                      <span>
-                        <strong>{formatDateTime(item.submittedAt)}</strong>
-                        <small className="muted">Врач: {item.doctorName}</small>
-                      </span>
-                      <span className="patient-history-scores">
-                        <strong>Т {item.result.anxietyScore}</strong>
-                        <strong>Д {item.result.depressionScore}</strong>
-                      </span>
-                    </summary>
-                    <div className="doctor-result-grid doctor-result-grid-compact">
-                      <span>
-                        <span className="muted">Тревога</span>
-                        <strong>{item.result.anxietyScore}</strong>
-                        <small>{item.result.anxietyInterpretation}</small>
-                      </span>
-                      <span>
-                        <span className="muted">Депрессия</span>
-                        <strong>{item.result.depressionScore}</strong>
-                        <small>{item.result.depressionInterpretation}</small>
-                      </span>
-                    </div>
-                    <div className="answers-list doctor-answers-list">
-                      {hadsQuestions.map((question) => (
-                        <div key={`patient-history-${item.id}-${question.id}`} className="answer-row">
-                          <strong>{question.number}. {question.text}</strong>
-                          <div className="muted">Ответ: {getAnswerLabel(question.id, item.answers)}</div>
-                        </div>
-                      ))}
-                    </div>
-                  </details>
-                ))}
-              </div>
-            </article>
-          ) : null}
           {state.result ? (
             <div className="patient-result stack">
               <article className="card stack patient-finish">
@@ -800,6 +749,14 @@ function HadsApp() {
                   })}
                 </div>
               ) : null}
+              {patientHistory.length > 0 ? (
+                <div className="patient-history-toolbar">
+                  <button className="button secondary" type="button" onClick={() => setShowPatientHistory((value) => !value)}>
+                    {showPatientHistory ? "Скрыть историю" : `История (${patientHistory.length})`}
+                  </button>
+                </div>
+              ) : null}
+              {showPatientHistory ? <PatientHistoryPanel history={patientHistory} /> : null}
             </div>
           ) : (
             <>
@@ -876,6 +833,14 @@ function HadsApp() {
                         </p>
                       </div>
                     ) : null}
+                    {patientHistory.length > 0 ? (
+                      <div className="patient-history-toolbar">
+                        <button className="button secondary" type="button" onClick={() => setShowPatientHistory((value) => !value)}>
+                          {showPatientHistory ? "Скрыть историю" : `История (${patientHistory.length})`}
+                        </button>
+                      </div>
+                    ) : null}
+                    {showPatientHistory ? <PatientHistoryPanel history={patientHistory} /> : null}
                   </div>
                 )}
               </div>
@@ -1071,6 +1036,53 @@ function HadsApp() {
 function getStoredAdminToken() {
   if (typeof window === "undefined") return "";
   return window.localStorage.getItem(ADMIN_TOKEN_STORAGE_KEY) ?? "";
+}
+
+function PatientHistoryPanel({ history }: { history: PatientHistoryItem[] }) {
+  return (
+    <article className="card patient-history stack">
+      <div>
+        <span className="pill">Сохранено на этом устройстве</span>
+        <h2 className="section-title">История HADS</h2>
+      </div>
+      <div className="patient-history-list">
+        {history.map((item) => (
+          <details key={item.id} className="patient-history-item">
+            <summary>
+              <span>
+                <strong>{formatDateTime(item.submittedAt)}</strong>
+                <small className="muted">Врач: {item.doctorName}</small>
+              </span>
+              <span className="patient-history-scores">
+                <strong>Т {item.result.anxietyScore}</strong>
+                <strong>Д {item.result.depressionScore}</strong>
+              </span>
+            </summary>
+            <div className="doctor-result-grid doctor-result-grid-compact">
+              <span>
+                <span className="muted">Тревога</span>
+                <strong>{item.result.anxietyScore}</strong>
+                <small>{item.result.anxietyInterpretation}</small>
+              </span>
+              <span>
+                <span className="muted">Депрессия</span>
+                <strong>{item.result.depressionScore}</strong>
+                <small>{item.result.depressionInterpretation}</small>
+              </span>
+            </div>
+            <div className="answers-list doctor-answers-list">
+              {hadsQuestions.map((question) => (
+                <div key={`patient-history-${item.id}-${question.id}`} className="answer-row">
+                  <strong>{question.number}. {question.text}</strong>
+                  <div className="muted">Ответ: {getAnswerLabel(question.id, item.answers)}</div>
+                </div>
+              ))}
+            </div>
+          </details>
+        ))}
+      </div>
+    </article>
+  );
 }
 
 function saveStoredAdminToken(token: string) {
