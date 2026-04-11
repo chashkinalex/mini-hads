@@ -27,6 +27,15 @@ type DoctorResult = HadsScoreResult & {
   answers: HadsAnswers;
 };
 
+type PatientHistoryItem = {
+  id: string;
+  submittedAt: string;
+  doctorName: string;
+  platform: string;
+  result: HadsScoreResult;
+  answers: HadsAnswers;
+};
+
 type DoctorState = {
   mode: "doctor";
   doctor: Doctor | null;
@@ -58,6 +67,7 @@ type PatientState = {
 type AppState = DoctorState | JoinState | PatientState;
 
 const initialAnswers: DraftAnswers = {};
+const PATIENT_HISTORY_STORAGE_KEY = "mini_hads_patient_history";
 
 function formatDateTime(value: string) {
   return new Intl.DateTimeFormat("ru-RU", {
@@ -81,6 +91,36 @@ function getStatusLabel(status: string) {
   if (status === "submitted") return "Опрос завершён";
   if (status === "cancelled") return "Опрос завершён без сохранения";
   return status;
+}
+
+function loadPatientHistory(): PatientHistoryItem[] {
+  if (typeof window === "undefined") return [];
+
+  try {
+    const raw = window.localStorage.getItem(PATIENT_HISTORY_STORAGE_KEY);
+    if (!raw) return [];
+
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function savePatientHistory(items: PatientHistoryItem[]) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(PATIENT_HISTORY_STORAGE_KEY, JSON.stringify(items));
+}
+
+function getAnswerLabel(questionId: HadsQuestionId, answersSource: HadsAnswers | DraftAnswers) {
+  const question = hadsQuestions.find((item) => item.id === questionId);
+  const answerValue = answersSource[questionId];
+
+  if (!question || answerValue === undefined) {
+    return "Нет ответа";
+  }
+
+  return question.options.find((option) => option.value === answerValue)?.label ?? "Нет ответа";
 }
 
 function getPlatformLaunchLink(platform: "max" | "telegram" | "vk" | "web", token: string) {
@@ -139,6 +179,8 @@ export function App() {
   const [isAdvancing, setIsAdvancing] = useState(false);
   const [showDoctorAnswers, setShowDoctorAnswers] = useState(false);
   const [showPatientAnswers, setShowPatientAnswers] = useState(false);
+  const [showPatientHistory, setShowPatientHistory] = useState(false);
+  const [patientHistory, setPatientHistory] = useState<PatientHistoryItem[]>(() => loadPatientHistory());
   const [doctorView, setDoctorView] = useState<"current" | "results">("current");
   const [selectedDoctorResultId, setSelectedDoctorResultId] = useState<string | null>(null);
   const [state, setState] = useState<AppState>(
@@ -412,7 +454,10 @@ export function App() {
     try {
       const response = await getPatientSession(sessionToken);
       await openPatientSession(sessionToken);
+      setAnswers(initialAnswers);
       setCurrentQuestionIndex(0);
+      setShowPatientAnswers(false);
+      setShowPatientHistory(false);
 
       setState({
         mode: "patient",
@@ -519,6 +564,17 @@ export function App() {
 
     try {
       const response = await submitPatientAnswers(state.token, answers as HadsAnswers);
+      const historyItem: PatientHistoryItem = {
+        id: state.token,
+        submittedAt: new Date().toISOString(),
+        doctorName: state.doctorName || "Врач",
+        platform,
+        result: response.result,
+        answers: answers as HadsAnswers,
+      };
+      const nextHistory = [historyItem, ...patientHistory.filter((item) => item.id !== historyItem.id)].slice(0, 30);
+      savePatientHistory(nextHistory);
+      setPatientHistory(nextHistory);
       setState({
         ...state,
         loading: false,
@@ -659,6 +715,57 @@ export function App() {
             <p className="hero-copy muted">Результаты переданы врачу. Вы можете раскрыть ответы и проверить выбранные варианты.</p>
           )}
           {state.error ? <p>{state.error}</p> : null}
+          {patientHistory.length > 0 ? (
+            <div className="patient-history-toolbar">
+              <button className="button secondary" type="button" onClick={() => setShowPatientHistory((value) => !value)}>
+                {showPatientHistory ? "Скрыть историю" : `История (${patientHistory.length})`}
+              </button>
+            </div>
+          ) : null}
+          {showPatientHistory ? (
+            <article className="card patient-history stack">
+              <div>
+                <span className="pill">Сохранено на этом устройстве</span>
+                <h2 className="section-title">История HADS</h2>
+              </div>
+              <div className="patient-history-list">
+                {patientHistory.map((item) => (
+                  <details key={item.id} className="patient-history-item">
+                    <summary>
+                      <span>
+                        <strong>{formatDateTime(item.submittedAt)}</strong>
+                        <small className="muted">Врач: {item.doctorName}</small>
+                      </span>
+                      <span className="patient-history-scores">
+                        <strong>Т {item.result.anxietyScore}</strong>
+                        <strong>Д {item.result.depressionScore}</strong>
+                      </span>
+                    </summary>
+                    <div className="doctor-result-grid doctor-result-grid-compact">
+                      <span>
+                        <span className="muted">Тревога</span>
+                        <strong>{item.result.anxietyScore}</strong>
+                        <small>{item.result.anxietyInterpretation}</small>
+                      </span>
+                      <span>
+                        <span className="muted">Депрессия</span>
+                        <strong>{item.result.depressionScore}</strong>
+                        <small>{item.result.depressionInterpretation}</small>
+                      </span>
+                    </div>
+                    <div className="answers-list doctor-answers-list">
+                      {hadsQuestions.map((question) => (
+                        <div key={`patient-history-${item.id}-${question.id}`} className="answer-row">
+                          <strong>{question.number}. {question.text}</strong>
+                          <div className="muted">Ответ: {getAnswerLabel(question.id, item.answers)}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </details>
+                ))}
+              </div>
+            </article>
+          ) : null}
           {state.result ? (
             <div className="patient-result stack">
               <article className="card stack patient-finish">
@@ -684,13 +791,10 @@ export function App() {
               {showPatientAnswers ? (
                 <div className="answers-list doctor-answers-list">
                   {hadsQuestions.map((question) => {
-                    const answerValue = answers[question.id];
-                    const answerLabel = answerValue === undefined ? "Нет ответа" : question.options.find((option) => option.value === answerValue)?.label ?? "Нет ответа";
-
                     return (
                       <div key={`patient-${question.id}`} className="answer-row">
                         <strong>{question.number}. {question.text}</strong>
-                        <div className="muted">Ответ: {answerLabel}</div>
+                        <div className="muted">Ответ: {getAnswerLabel(question.id, answers)}</div>
                       </div>
                     );
                   })}
