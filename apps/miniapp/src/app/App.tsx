@@ -559,36 +559,46 @@ export function App() {
 
     return (
       <main className="shell shell-patient">
-        <section className="hero patient-hero stack">
+        <section className="hero patient-hero join-hero stack">
           <div className="topline">
             <span className="pill">Переход к опросу</span>
             <span className="inline-note">Praxium</span>
           </div>
-          <h1 className="hero-title">Выберите, как открыть опрос</h1>
+          <h1 className="hero-title">Где пройти HADS?</h1>
           <p className="hero-copy muted">
-            Ссылка получена от врача {state.doctorName || "Praxium"}. Вы можете открыть опрос в Mini App нужной платформы или продолжить в браузере для локального теста.
+            Ссылка получена от врача {state.doctorName || "Praxium"}. Выберите удобное приложение, чтобы открыть
+            короткий опрос. Данные будут переданы только врачу, который выдал QR-код.
           </p>
           {state.error ? <p>{state.error}</p> : null}
+          <div className="join-note">
+            <span>14 вопросов</span>
+            <span>3-5 минут</span>
+            <span>Без регистрации пациента</span>
+          </div>
           <div className="join-grid">
-            <a className="card join-card" href={maxLinkProps?.href} onClick={maxLinkProps?.onClick}>
-              <span className="pill">MAX</span>
+            <a className="card join-card join-card-primary" href={maxLinkProps?.href} onClick={maxLinkProps?.onClick}>
+              <span className="join-card__mark">M</span>
+              <span className="pill">Рекомендуется</span>
               <strong>Открыть в MAX</strong>
-              <span className="muted">Основной сценарий для Mini App.</span>
+              <span className="muted">Основной сценарий Praxium Mini App.</span>
             </a>
             <a className="card join-card" href={telegramLinkProps?.href} onClick={telegramLinkProps?.onClick}>
+              <span className="join-card__mark">T</span>
               <span className="pill">Telegram</span>
               <strong>Открыть в Telegram</strong>
-              <span className="muted">Используйте для теста контейнера Telegram Mini Apps.</span>
+              <span className="muted">Если удобнее пройти опрос в Telegram.</span>
             </a>
             <a className="card join-card" href={vkLinkProps?.href} onClick={vkLinkProps?.onClick}>
+              <span className="join-card__mark">VK</span>
               <span className="pill">VK</span>
               <strong>Открыть в VK</strong>
-              <span className="muted">Подходит для сценария VK Mini Apps.</span>
+              <span className="muted">Для прохождения в VK Mini Apps.</span>
             </a>
-            <a className="card join-card accent-panel" href={webLinkProps?.href} onClick={webLinkProps?.onClick}>
+            <a className="card join-card join-card-web" href={webLinkProps?.href} onClick={webLinkProps?.onClick}>
+              <span className="join-card__mark">Web</span>
               <span className="pill">Веб</span>
               <strong>Продолжить в браузере</strong>
-              <span className="muted">Удобно для локальной разработки и проверки flow.</span>
+              <span className="muted">Если не хотите открывать мессенджер.</span>
             </a>
           </div>
         </section>
