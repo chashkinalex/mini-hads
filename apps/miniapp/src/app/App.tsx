@@ -1103,7 +1103,12 @@ function AdminApp() {
       saveStoredAdminToken(token);
     } catch (loadError) {
       setStats(null);
-      setError(loadError instanceof Error ? loadError.message : "Не удалось загрузить статистику");
+      const message = loadError instanceof Error ? loadError.message : "Не удалось загрузить статистику";
+      setError(
+        message === "Unauthorized"
+          ? "Нет доступа: проверьте, что ADMIN_TOKEN задан в Railway API и что введённый токен совпадает."
+          : message,
+      );
     } finally {
       setLoading(false);
     }
@@ -1148,6 +1153,21 @@ function AdminApp() {
           <button className="button" type="submit" disabled={loading}>
             {loading ? "Загружаем..." : "Открыть статистику"}
           </button>
+          {adminToken ? (
+            <button
+              className="button secondary"
+              type="button"
+              onClick={() => {
+                setAdminToken("");
+                setTokenDraft("");
+                setStats(null);
+                setError(null);
+                saveStoredAdminToken("");
+              }}
+            >
+              Сбросить
+            </button>
+          ) : null}
         </form>
 
         {error ? <p>{error}</p> : null}
