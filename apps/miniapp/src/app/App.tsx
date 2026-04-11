@@ -59,6 +59,15 @@ type AppState = DoctorState | JoinState | PatientState;
 
 const initialAnswers: DraftAnswers = {};
 
+function formatDateTime(value: string) {
+  return new Intl.DateTimeFormat("ru-RU", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value));
+}
+
 function getPlatformLabel(platform: string) {
   if (platform === "max") return "MAX";
   if (platform === "telegram") return "Telegram";
@@ -129,6 +138,9 @@ export function App() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [isAdvancing, setIsAdvancing] = useState(false);
   const [showDoctorAnswers, setShowDoctorAnswers] = useState(false);
+  const [showPatientAnswers, setShowPatientAnswers] = useState(false);
+  const [doctorView, setDoctorView] = useState<"current" | "results">("current");
+  const [selectedDoctorResultId, setSelectedDoctorResultId] = useState<string | null>(null);
   const [state, setState] = useState<AppState>(
     initialContext.token
       ? initialContext.launch
@@ -245,6 +257,12 @@ export function App() {
   useEffect(() => {
     setShowDoctorAnswers(false);
   }, [state.mode === "doctor" ? state.currentToken : null]);
+
+  useEffect(() => {
+    if (state.mode === "doctor" && doctorView === "results" && !selectedDoctorResultId && state.results[0]) {
+      setSelectedDoctorResultId(state.results[0].sessionId);
+    }
+  }, [state.mode === "doctor" ? state.results : null, doctorView, selectedDoctorResultId]);
 
   useEffect(() => {
     if (platform !== "max") {
@@ -419,6 +437,8 @@ export function App() {
   async function createNextPatientSession() {
     if (state.mode !== "doctor" || !state.doctor) return;
 
+    setDoctorView("current");
+    setSelectedDoctorResultId(null);
     setState({ ...state, loading: true, error: null, showCancelConfirm: false });
 
     try {
@@ -446,6 +466,7 @@ export function App() {
 
   async function handleNewPatient() {
     if (state.mode !== "doctor") return;
+    setDoctorView("current");
 
     if (shouldConfirmBeforeNewPatient(activeSession ?? undefined)) {
       setState({ ...state, showCancelConfirm: true });
@@ -558,8 +579,6 @@ export function App() {
 
   if (state.mode === "join") {
     const maxLinkProps = getJoinNavigationProps("max");
-    const telegramLinkProps = getJoinNavigationProps("telegram");
-    const vkLinkProps = getJoinNavigationProps("vk");
     const webLinkProps = getJoinNavigationProps("web");
 
     return (
@@ -580,24 +599,12 @@ export function App() {
             <span>3-5 минут</span>
             <span>Без регистрации пациента</span>
           </div>
-          <div className="join-grid">
+          <div className="join-grid join-grid-compact">
             <a className="card join-card join-card-primary" href={maxLinkProps?.href} onClick={maxLinkProps?.onClick}>
               <span className="join-card__mark">M</span>
               <span className="pill">Рекомендуется</span>
               <strong>Открыть в MAX</strong>
               <span className="muted">Основной сценарий Praxium Mini App.</span>
-            </a>
-            <a className="card join-card" href={telegramLinkProps?.href} onClick={telegramLinkProps?.onClick}>
-              <span className="join-card__mark">T</span>
-              <span className="pill">Telegram</span>
-              <strong>Открыть в Telegram</strong>
-              <span className="muted">Если удобнее пройти опрос в Telegram.</span>
-            </a>
-            <a className="card join-card" href={vkLinkProps?.href} onClick={vkLinkProps?.onClick}>
-              <span className="join-card__mark">VK</span>
-              <span className="pill">VK</span>
-              <strong>Открыть в VK</strong>
-              <span className="muted">Для прохождения в VK Mini Apps.</span>
             </a>
             <a className="card join-card join-card-web" href={webLinkProps?.href} onClick={webLinkProps?.onClick}>
               <span className="join-card__mark">Web</span>
@@ -616,52 +623,79 @@ export function App() {
       <main className="shell shell-patient">
         <section className="hero patient-hero stack">
           <div className="topline">
-            <span className="pill">Опрос пациента</span>
+            <span className="pill">{state.result ? "Результаты пациента" : "Опрос пациента"}</span>
             <span className="inline-note">{getPlatformLabel(platform)}</span>
           </div>
-          <h1 className="hero-title">Госпитальная шкала тревоги и депрессии</h1>
-          <div className="hero-copy muted stack intro-copy">
-            <p>
-              Врачам известно, что эмоции играют важную роль при большинстве заболеваний. Если ваш врач узнает об этих
-              чувствах, он сможет лучше вам помочь. Эта анкета предназначена для того, чтобы ваш врач был более подробно
-              осведомлен о вашем самочувствии.
-            </p>
-            <p>
-              Прочитайте каждый пункт и поставьте отметку напротив ответа, наиболее соответствующего тому, как вы себя
-              чувствовали на прошлой неделе.
-            </p>
-            <p>
-              Не задумывайтесь слишком долго над своими ответами: ваша первая реакция на каждый пункт, вероятно, будет
-              более точной, чем тщательно продуманный ответ.
-            </p>
-          </div>
-          <div className="patient-progress card accent-panel">
-            <div>
-              <strong>Вопрос {currentQuestionIndex + 1} из 14</strong>
-              <div className="muted">Среднее время прохождения: 3-5 минут</div>
-            </div>
-            <div className="patient-progress__meta">
-              <div className="muted">Отвечено</div>
-              <div className="score-small">{answeredCount}/14</div>
-            </div>
-          </div>
+          <h1 className="hero-title">{state.result ? "Результаты HADS" : "Госпитальная шкала тревоги и депрессии"}</h1>
+          {!state.result ? (
+            <>
+              <div className="hero-copy muted stack intro-copy">
+                <p>
+                  Врачам известно, что эмоции играют важную роль при большинстве заболеваний. Если ваш врач узнает об
+                  этих чувствах, он сможет лучше вам помочь. Эта анкета предназначена для того, чтобы ваш врач был более
+                  подробно осведомлен о вашем самочувствии.
+                </p>
+                <p>
+                  Прочитайте каждый пункт и поставьте отметку напротив ответа, наиболее соответствующего тому, как вы
+                  себя чувствовали на прошлой неделе.
+                </p>
+                <p>
+                  Не задумывайтесь слишком долго над своими ответами: ваша первая реакция на каждый пункт, вероятно,
+                  будет более точной, чем тщательно продуманный ответ.
+                </p>
+              </div>
+              <div className="patient-progress card accent-panel">
+                <div>
+                  <strong>Вопрос {currentQuestionIndex + 1} из 14</strong>
+                  <div className="muted">Среднее время прохождения: 3-5 минут</div>
+                </div>
+                <div className="patient-progress__meta">
+                  <div className="muted">Отвечено</div>
+                  <div className="score-small">{answeredCount}/14</div>
+                </div>
+              </div>
+            </>
+          ) : (
+            <p className="hero-copy muted">Результаты переданы врачу. Вы можете раскрыть ответы и проверить выбранные варианты.</p>
+          )}
           {state.error ? <p>{state.error}</p> : null}
           {state.result ? (
-            <div className="grid">
-              <article className="card stack metric-card">
-                <div className="muted">Тревога</div>
-                <div className="score">{state.result.anxietyScore}</div>
-                <strong>{state.result.anxietyInterpretation}</strong>
-              </article>
-              <article className="card stack metric-card accent-panel">
-                <div className="muted">Депрессия</div>
-                <div className="score">{state.result.depressionScore}</div>
-                <strong>{state.result.depressionInterpretation}</strong>
-              </article>
+            <div className="patient-result stack">
               <article className="card stack patient-finish">
                 <div className="section-title">Опрос завершён</div>
-                <p className="muted">Спасибо. Результаты уже доступны врачу. Вы можете закрыть окно или вернуться в мессенджер.</p>
+                <p className="muted">Спасибо. Результаты уже доступны врачу.</p>
               </article>
+              <button className="doctor-result-summary patient-result-summary" type="button" onClick={() => setShowPatientAnswers((value) => !value)}>
+                <span className="pill">Ваш результат</span>
+                <span className="doctor-result-grid">
+                  <span>
+                    <span className="muted">Тревога</span>
+                    <strong>{state.result.anxietyScore}</strong>
+                    <small>{state.result.anxietyInterpretation}</small>
+                  </span>
+                  <span>
+                    <span className="muted">Депрессия</span>
+                    <strong>{state.result.depressionScore}</strong>
+                    <small>{state.result.depressionInterpretation}</small>
+                  </span>
+                </span>
+                <span className="muted">{showPatientAnswers ? "Скрыть ответы" : "Тапните, чтобы посмотреть ваши ответы"}</span>
+              </button>
+              {showPatientAnswers ? (
+                <div className="answers-list doctor-answers-list">
+                  {hadsQuestions.map((question) => {
+                    const answerValue = answers[question.id];
+                    const answerLabel = answerValue === undefined ? "Нет ответа" : question.options.find((option) => option.value === answerValue)?.label ?? "Нет ответа";
+
+                    return (
+                      <div key={`patient-${question.id}`} className="answer-row">
+                        <strong>{question.number}. {question.text}</strong>
+                        <div className="muted">Ответ: {answerLabel}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : null}
             </div>
           ) : (
             <>
@@ -741,7 +775,73 @@ export function App() {
           </div>
         ) : null}
 
-        {!activeSession ? (
+        {doctorView === "results" ? (
+          <article className="card doctor-main-card doctor-results-screen stack">
+            <div className="doctor-results-head">
+              <div>
+                <span className="pill">История</span>
+                <h2 className="section-title">Результаты</h2>
+              </div>
+              <button className="button secondary" type="button" onClick={() => setDoctorView("current")}>
+                К текущему
+              </button>
+            </div>
+            {state.results.length === 0 ? (
+              <p className="muted">Завершённых опросов пока нет.</p>
+            ) : (
+              <div className="doctor-results-layout">
+                <div className="doctor-results-list">
+                  {state.results.map((result) => (
+                    <button
+                      key={result.sessionId}
+                      className={`doctor-result-row ${selectedDoctorResultId === result.sessionId ? "doctor-result-row-active" : ""}`}
+                      type="button"
+                      onClick={() => setSelectedDoctorResultId(result.sessionId)}
+                    >
+                      <span>{formatDateTime(result.submittedAt)}</span>
+                      <strong>Т {result.anxietyScore} / Д {result.depressionScore}</strong>
+                    </button>
+                  ))}
+                </div>
+                {state.results.find((result) => result.sessionId === selectedDoctorResultId) ? (
+                  <div className="answers-list doctor-answers-list">
+                    {(() => {
+                      const selectedResult = state.results.find((result) => result.sessionId === selectedDoctorResultId)!;
+
+                      return (
+                        <>
+                          <div className="doctor-result-grid doctor-result-grid-compact">
+                            <span>
+                              <span className="muted">Тревога</span>
+                              <strong>{selectedResult.anxietyScore}</strong>
+                              <small>{selectedResult.anxietyInterpretation}</small>
+                            </span>
+                            <span>
+                              <span className="muted">Депрессия</span>
+                              <strong>{selectedResult.depressionScore}</strong>
+                              <small>{selectedResult.depressionInterpretation}</small>
+                            </span>
+                          </div>
+                          {hadsQuestions.map((question) => {
+                            const answerValue = selectedResult.answers[question.id];
+                            const answerLabel = question.options.find((option) => option.value === answerValue)?.label ?? "Нет ответа";
+
+                            return (
+                              <div key={`history-${selectedResult.sessionId}-${question.id}`} className="answer-row">
+                                <strong>{question.number}. {question.text}</strong>
+                                <div className="muted">Ответ: {answerLabel}</div>
+                              </div>
+                            );
+                          })}
+                        </>
+                      );
+                    })()}
+                  </div>
+                ) : null}
+              </div>
+            )}
+          </article>
+        ) : !activeSession ? (
           <article className="card doctor-empty doctor-main-card stack">
             <h2 className="section-title">Новый пациент</h2>
             <p className="muted">Создайте QR-код для прохождения HADS.</p>
@@ -817,8 +917,12 @@ export function App() {
         )}
 
         <div className="doctor-bottom-actions">
-          <button className="button secondary" type="button">
-            Результаты
+          <button
+            className={`button ${doctorView === "results" ? "" : "secondary"}`}
+            type="button"
+            onClick={() => setDoctorView((view) => (view === "results" ? "current" : "results"))}
+          >
+            {doctorView === "results" ? "Текущий" : "Результаты"}
           </button>
           <button className="button" disabled={state.loading} onClick={handleNewPatient}>
             Новый пациент

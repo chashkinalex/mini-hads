@@ -387,6 +387,76 @@ input {
   padding-right: 4px;
 }
 
+.doctor-results-screen {
+  justify-content: flex-start;
+  min-height: 58vh;
+}
+
+.doctor-results-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.doctor-results-layout {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.72fr) minmax(0, 1.35fr);
+  gap: 16px;
+  min-height: 0;
+}
+
+.doctor-results-list {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  max-height: 58vh;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.doctor-result-row {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.78);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+}
+
+.doctor-result-row:hover,
+.doctor-result-row-active {
+  border-color: rgba(21, 101, 74, 0.28);
+  background: var(--surface-accent);
+  transform: translateY(-1px);
+}
+
+.doctor-result-row span {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.doctor-result-grid-compact > span {
+  min-height: 150px;
+  padding: 18px;
+}
+
+.patient-result {
+  max-width: 820px;
+}
+
+.patient-result-summary {
+  padding: 22px;
+  border: 1px solid var(--border);
+  border-radius: 32px;
+  background: rgba(255, 255, 255, 0.78);
+}
+
 .doctor-lead {
   min-height: 100%;
 }
@@ -700,6 +770,36 @@ input {
 
   .doctor-result-grid > span {
     min-height: 156px;
+  }
+
+  .doctor-results-head,
+  .doctor-results-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .doctor-results-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .doctor-results-list {
+    display: flex;
+    max-height: none;
+    overflow-x: auto;
+    padding: 0 2px 6px;
+  }
+
+  .doctor-result-row {
+    min-width: 178px;
+  }
+
+  .doctor-answers-list {
+    max-height: none;
+  }
+
+  .patient-result-summary {
+    padding: 16px;
+    border-radius: 26px;
   }
 
   .patient-progress,
