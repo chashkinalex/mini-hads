@@ -485,10 +485,9 @@ export function RecipeApp() {
                 </div>
               </div>
               <div className="recipe-paper recipe-paper-back print-only">
-                <div className="rx-back-title">Оборотная сторона</div>
-                <div className="rx-back-box">
+                <div className="rx-back-commission">
                   <span>Отметка о назначении лекарственного препарата по решению врачебной комиссии</span>
-                  <div className="rx-back-box-fill" />
+                  <div className="rx-back-commission-line" />
                 </div>
                 <div className="rx-back-signatures">
                   <div>

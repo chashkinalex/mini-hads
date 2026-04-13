@@ -382,34 +382,33 @@
 }
 
 .recipe-paper-back {
-  align-content: stretch;
-}
-
-.rx-back-title {
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.rx-back-box {
   display: grid;
-  gap: 8px;
+  grid-template-rows: auto 1fr auto;
+  align-content: stretch;
+  gap: 14px;
 }
 
-.rx-back-box span,
+.rx-back-commission {
+  display: grid;
+  gap: 6px;
+}
+
+.rx-back-commission span,
 .rx-back-signatures span {
   color: #4b5563;
   font-size: 0.66rem;
 }
 
-.rx-back-box-fill {
-  min-height: 160px;
-  border: 1px dashed #6b7280;
+.rx-back-commission-line {
+  height: 22px;
+  border-bottom: 1px solid #9ca3af;
 }
 
 .rx-back-signatures {
   display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
   gap: 12px;
+  align-items: end;
 }
 
 .rx-back-signatures div {
@@ -639,27 +638,25 @@
     page-break-before: always;
     break-before: page;
     page-break-after: auto;
-    gap: 3mm;
-  }
-
-  .rx-back-title {
-    font-size: 6.8px;
-  }
-
-  .rx-back-box {
+    grid-template-rows: auto 1fr auto;
     gap: 2mm;
   }
 
-  .rx-back-box span,
+  .rx-back-commission {
+    gap: 1.2mm;
+  }
+
+  .rx-back-commission span,
   .rx-back-signatures span {
     font-size: 5.8px;
   }
 
-  .rx-back-box-fill {
-    min-height: 82mm;
+  .rx-back-commission-line {
+    height: 4mm;
   }
 
   .rx-back-signatures {
+    grid-template-columns: 1fr 1fr 1fr;
     gap: 2.5mm;
   }
 
