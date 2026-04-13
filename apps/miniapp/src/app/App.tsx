@@ -19,6 +19,7 @@ import { detectPlatform } from "../platform/detectPlatform";
 import type { SupportedPlatform } from "../platform/types";
 import { bindMaxBackButton, getMaxStartParam, openExternalUrl, openMaxUrl, prepareMaxWebApp } from "../platform/max";
 import { getTelegramStartParam, prepareTelegramWebApp } from "../platform/telegram";
+import { trackGoal } from "../shared/analytics/metrika";
 import "../shared/ui/app.css";
 
 type DraftAnswers = Partial<Record<HadsQuestionId, HadsAnswers[HadsQuestionId]>>;
@@ -420,6 +421,7 @@ function HadsApp() {
     try {
       const auth = await loginDoctor(platform);
       const dashboard = await getDoctorResults();
+      trackGoal("doctor_dashboard_loaded", { platform, results: dashboard.results.length, sessions: dashboard.sessions.length });
 
       setState({
         mode: "doctor",
@@ -470,6 +472,7 @@ function HadsApp() {
     try {
       const response = await getPatientSession(sessionToken);
       await openPatientSession(sessionToken);
+      trackGoal("patient_survey_opened", { platform, doctorName: response.session.doctorName });
       setAnswers(initialAnswers);
       setCurrentQuestionIndex(0);
       setShowPatientAnswers(false);
@@ -506,6 +509,7 @@ function HadsApp() {
     try {
       const response = await createDoctorSession();
       const dashboard = await getDoctorResults();
+      trackGoal("doctor_new_patient_created", { platform });
 
       setState({
         ...state,
@@ -581,6 +585,13 @@ function HadsApp() {
 
     try {
       const response = await submitPatientAnswers(state.token, answers as HadsAnswers);
+      trackGoal("patient_survey_submitted", {
+        platform,
+        anxietyScore: response.result.anxietyScore,
+        depressionScore: response.result.depressionScore,
+        anxietyLevel: response.result.anxietyLevel,
+        depressionLevel: response.result.depressionLevel,
+      });
       const historyItem: PatientHistoryItem = {
         id: state.token,
         submittedAt: new Date().toISOString(),
@@ -625,6 +636,7 @@ function HadsApp() {
   async function copyPatientLink() {
     if (!patientJoinLink) return;
     await navigator.clipboard.writeText(patientJoinLink);
+    trackGoal("doctor_patient_link_copied", { platform });
   }
 
   function getJoinNavigationProps(nextPlatform: "max" | "telegram" | "vk" | "web") {
@@ -632,6 +644,8 @@ function HadsApp() {
     const targetUrl = getPlatformLaunchLink(nextPlatform, state.token);
 
     const onClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
+      trackGoal("patient_join_platform_selected", { platform: nextPlatform });
+
       if (nextPlatform === "max" && platform === "max") {
         event.preventDefault();
         openMaxUrl(targetUrl);
@@ -721,7 +735,14 @@ function HadsApp() {
                 <div className="section-title">Опрос завершён</div>
                 <p className="muted">Спасибо. Результаты уже доступны врачу.</p>
               </article>
-              <button className="doctor-result-summary patient-result-summary" type="button" onClick={() => setShowPatientAnswers((value) => !value)}>
+              <button
+                className="doctor-result-summary patient-result-summary"
+                type="button"
+                onClick={() => {
+                  trackGoal("patient_current_answers_toggled", { nextVisible: !showPatientAnswers });
+                  setShowPatientAnswers((value) => !value);
+                }}
+              >
                 <span className="pill">Ваш результат</span>
                 <span className="doctor-result-grid">
                   <span>
@@ -751,7 +772,14 @@ function HadsApp() {
               ) : null}
               {patientHistory.length > 0 ? (
                 <div className="patient-history-toolbar">
-                  <button className="button secondary" type="button" onClick={() => setShowPatientHistory((value) => !value)}>
+                  <button
+                    className="button secondary"
+                    type="button"
+                    onClick={() => {
+                      trackGoal("patient_history_toggled", { nextVisible: !showPatientHistory, count: patientHistory.length });
+                      setShowPatientHistory((value) => !value);
+                    }}
+                  >
                     {showPatientHistory ? "Скрыть историю" : `История (${patientHistory.length})`}
                   </button>
                 </div>
@@ -835,7 +863,14 @@ function HadsApp() {
                     ) : null}
                     {patientHistory.length > 0 ? (
                       <div className="patient-history-toolbar">
-                        <button className="button secondary" type="button" onClick={() => setShowPatientHistory((value) => !value)}>
+                        <button
+                          className="button secondary"
+                          type="button"
+                          onClick={() => {
+                            trackGoal("patient_history_toggled", { nextVisible: !showPatientHistory, count: patientHistory.length });
+                            setShowPatientHistory((value) => !value);
+                          }}
+                        >
                           {showPatientHistory ? "Скрыть историю" : `История (${patientHistory.length})`}
                         </button>
                       </div>
@@ -882,7 +917,14 @@ function HadsApp() {
                 <span className="pill">История</span>
                 <h2 className="section-title">Результаты</h2>
               </div>
-              <button className="button secondary" type="button" onClick={() => setDoctorView("current")}>
+              <button
+                className="button secondary"
+                type="button"
+                onClick={() => {
+                  trackGoal("doctor_current_view_opened", { platform });
+                  setDoctorView("current");
+                }}
+              >
                 К текущему
               </button>
             </div>
@@ -953,7 +995,10 @@ function HadsApp() {
                 <button
                   className="doctor-result-summary"
                   type="button"
-                  onClick={() => setShowDoctorAnswers((value) => !value)}
+                  onClick={() => {
+                    trackGoal("doctor_current_result_answers_toggled", { platform, nextVisible: !showDoctorAnswers });
+                    setShowDoctorAnswers((value) => !value);
+                  }}
                   aria-expanded={showDoctorAnswers}
                 >
                   <span className="pill">Результаты</span>
@@ -1020,7 +1065,11 @@ function HadsApp() {
           <button
             className={`button ${doctorView === "results" ? "" : "secondary"}`}
             type="button"
-            onClick={() => setDoctorView((view) => (view === "results" ? "current" : "results"))}
+            onClick={() => {
+              const nextView = doctorView === "results" ? "current" : "results";
+              trackGoal(nextView === "results" ? "doctor_results_view_opened" : "doctor_current_view_opened", { platform });
+              setDoctorView(nextView);
+            }}
           >
             {doctorView === "results" ? "Текущий" : "Результаты"}
           </button>
