@@ -219,7 +219,7 @@ export function RecipeApp() {
 
   async function copyShareLink() {
     const url = new URL(window.location.href);
-    url.pathname = "/import/" + encodeDraft(draft);
+    url.pathname = "/recipe/import/" + encodeDraft(draft);
     url.search = "";
     await navigator.clipboard.writeText(url.toString());
     setShareCopied(true);
