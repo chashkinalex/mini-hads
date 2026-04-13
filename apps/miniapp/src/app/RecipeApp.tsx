@@ -31,6 +31,7 @@ type HistoryItem = RecipeDraft & {
 };
 
 const RECIPE_HISTORY_KEY = "praxium_recipe_history";
+const RECIPE_APP_VERSION = "2026-04-13.1";
 
 const emptyPatient: Patient = {
   name: "",
@@ -171,7 +172,7 @@ export function RecipeApp() {
 
   useEffect(() => {
     document.title = "Рецепты";
-    trackGoal("recipe_app_opened", { items: draft.items.length });
+    trackGoal("recipe_app_opened", { items: draft.items.length, version: RECIPE_APP_VERSION });
   }, []);
 
   function updatePatient(patch: Partial<Patient>) {
