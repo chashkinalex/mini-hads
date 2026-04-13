@@ -160,6 +160,15 @@ function renderLine(item: PrescriptionItem) {
   return [parts, quantity, months].filter(Boolean).join(", ");
 }
 
+function getReleaseLine(items: PrescriptionItem[]) {
+  const firstItem = items[0];
+  if (!firstItem) return "ОТПУСКАТЬ ПО __________ ЕЖЕМЕСЯЧНО";
+
+  const quantity = firstItem.quantity ? `${firstItem.quantity} ` : "";
+  const form = firstItem.form || "уп.";
+  return `ОТПУСКАТЬ ПО ${quantity}${form.toUpperCase()} ЕЖЕМЕСЯЧНО`;
+}
+
 export function RecipeApp() {
   const [draft, setDraft] = useState<RecipeDraft>(() => getImportedDraft() ?? initialDraft);
   const [history, setHistory] = useState<HistoryItem[]>(() => loadHistory());
@@ -375,30 +384,80 @@ export function RecipeApp() {
               <span>{selectedSummary.length} назнач.</span>
             </div>
             <div className="recipe-paper">
-              <div className="recipe-paper-top">
-                <strong>{draft.clinicName || "Медицинская организация"}</strong>
-                <span>Рецепт</span>
+              <div className="rx-official-head">
+                <div>
+                  <span>Министерство здравоохранения</span>
+                  <span>Российской Федерации</span>
+                  <br />
+                  <span>Наименование медицинской организации</span>
+                  <strong>{draft.clinicName || "________________________"}</strong>
+                </div>
+                <div>
+                  <span>Код формы по ОКУД</span>
+                  <span>Код учреждения по ОКПО</span>
+                  <br />
+                  <span>Медицинская документация</span>
+                  <strong>Форма N 107-1/у</strong>
+                </div>
               </div>
-              <div className="recipe-paper-patient">
-                <p><b>Пациент:</b> {draft.patient.name || "..."}</p>
-                <p><b>Дата рождения:</b> {formatDate(draft.patient.birthDate) || "..."}</p>
-                {draft.patient.diagnosis ? <p><b>Диагноз:</b> {draft.patient.diagnosis}</p> : null}
+              <div className="rx-special-purpose">ПО СПЕЦИАЛЬНОМУ НАЗНАЧЕНИЮ</div>
+              <div className="rx-series-row">
+                <span>РЕЦЕПТ</span>
+                <span>серия _________ N _________</span>
+                <span>«{new Intl.DateTimeFormat("ru-RU", { day: "2-digit" }).format(new Date())}» __________ 20__ г.</span>
               </div>
-              <div className="recipe-paper-list">
+              <div className="rx-patient-block">
+                <p>
+                  <span>Фамилия, инициалы имени и отчества пациента</span>
+                  <strong>{draft.patient.name || "____________________________"}</strong>
+                </p>
+                <p>
+                  <span>Дата рождения</span>
+                  <strong>{formatDate(draft.patient.birthDate) || "____________________________"}</strong>
+                </p>
+                {draft.patient.diagnosis ? (
+                  <p>
+                    <span>Диагноз / комментарий</span>
+                    <strong>{draft.patient.diagnosis}</strong>
+                  </p>
+                ) : null}
+              </div>
+              <div className="rx-prescription-list">
                 {selectedSummary.length === 0 ? (
-                  <p className="recipe-muted">Назначения появятся здесь.</p>
+                  <div className="rx-prescription-block">
+                    <div className="rx-rp-line">руб.|коп.| Rp.</div>
+                    <p className="recipe-muted">Назначения появятся здесь.</p>
+                  </div>
                 ) : (
                   selectedSummary.map((item, index) => (
-                    <div key={item.id} className="recipe-paper-item">
-                      <b>{index + 1}. Rp.:</b> {renderLine(item)}
-                      {item.instructions ? <span>D.S. {item.instructions}</span> : null}
+                    <div key={item.id} className="rx-prescription-block">
+                      <div className="rx-rp-line">руб.|коп.| Rp.</div>
+                      <p>
+                        <b>{index + 1}.</b> {renderLine(item)}
+                      </p>
+                      <p>D.t.d. N {item.quantity || "___"}</p>
+                      {item.instructions ? <p>S. {item.instructions}</p> : <p>S. ________________________________</p>}
                     </div>
                   ))
                 )}
               </div>
-              <div className="recipe-paper-footer">
-                <span>Врач: {draft.doctorName || "..."}</span>
-                <span>Дата: {new Intl.DateTimeFormat("ru-RU").format(new Date())}</span>
+              <div className="rx-release-line">{getReleaseLine(selectedSummary)}</div>
+              <div className="rx-footer">
+                <div>
+                  <span>Подпись</span>
+                  <strong>________________________</strong>
+                </div>
+                <div>
+                  <span>М.П.</span>
+                </div>
+                <div>
+                  <span>Фамилия лечащего врача</span>
+                  <strong>{draft.doctorName || "________________________"}</strong>
+                </div>
+                <div>
+                  <span>Рецепт действителен</span>
+                  <strong>90 дней</strong>
+                </div>
               </div>
             </div>
             <div className="recipe-preview-actions">
