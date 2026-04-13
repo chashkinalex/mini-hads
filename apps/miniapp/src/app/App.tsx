@@ -20,6 +20,7 @@ import type { SupportedPlatform } from "../platform/types";
 import { bindMaxBackButton, getMaxStartParam, openExternalUrl, openMaxUrl, prepareMaxWebApp } from "../platform/max";
 import { getTelegramStartParam, prepareTelegramWebApp } from "../platform/telegram";
 import { trackGoal } from "../shared/analytics/metrika";
+import { RecipeApp } from "./RecipeApp";
 import "../shared/ui/app.css";
 
 type DraftAnswers = Partial<Record<HadsQuestionId, HadsAnswers[HadsQuestionId]>>;
@@ -131,6 +132,12 @@ function isAdminRoute() {
   return typeof window !== "undefined" && window.location.pathname === "/admin";
 }
 
+function isRecipeRoute() {
+  if (typeof window === "undefined") return false;
+
+  return window.location.hostname === "recipe.praxiumscales.ru" || window.location.pathname.startsWith("/recipe") || window.location.pathname.startsWith("/import/");
+}
+
 function getPlatformLaunchLink(platform: "max" | "telegram" | "vk" | "web", token: string) {
   const encodedToken = encodeURIComponent(token);
   const maxBotName = import.meta.env.VITE_MAX_BOT_NAME;
@@ -180,6 +187,10 @@ function getLaunchContext(): { token: string | null; launch: boolean; platform: 
 }
 
 export function App() {
+  if (isRecipeRoute()) {
+    return <RecipeApp />;
+  }
+
   if (isAdminRoute()) {
     return <AdminApp />;
   }
