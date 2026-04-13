@@ -471,6 +471,7 @@ export function RecipeApp() {
                 Печать
               </button>
             </div>
+            <p className="recipe-print-note">Для печати: A4, поля 0, колонтитулы браузера отключены.</p>
           </aside>
         </div>
       </section>

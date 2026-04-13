@@ -227,6 +227,12 @@
   color: #64748b;
 }
 
+.recipe-print-note {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.82rem;
+}
+
 .recipe-paper {
   min-height: 520px;
   display: grid;
@@ -420,14 +426,26 @@
   }
 }
 
+@page {
+  size: A4 portrait;
+  margin: 0;
+}
+
 @media print {
+  html,
   body {
+    width: 210mm;
+    min-height: 297mm;
+    margin: 0 !important;
     background: white !important;
   }
 
   .recipe-shell {
-    padding: 0;
-    background: white;
+    width: 210mm;
+    min-height: 297mm;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
   }
 
   .recipe-header,
@@ -435,6 +453,7 @@
   .recipe-medications,
   .recipe-preview-head,
   .recipe-preview-actions,
+  .recipe-print-note,
   .recipe-history {
     display: none !important;
   }
@@ -442,23 +461,101 @@
   .recipe-workspace,
   .recipe-layout,
   .recipe-preview {
-    display: block;
-    max-width: none;
-    margin: 0;
-    padding: 0;
+    display: block !important;
+    width: 105mm !important;
+    max-width: none !important;
+    height: 148.5mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 
   .recipe-card {
-    border: 0;
-    box-shadow: none;
-    padding: 0;
+    border: 0 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    background: white !important;
   }
 
   .recipe-paper {
-    min-height: auto;
-    border: 0;
-    border-radius: 0;
-    box-shadow: none;
-    padding: 18mm;
+    width: 105mm !important;
+    height: 148.5mm !important;
+    min-height: 0 !important;
+    box-sizing: border-box;
+    gap: 2.2mm;
+    overflow: hidden;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    padding: 5mm !important;
+    font-size: 7.5px;
+    line-height: 1.1;
+  }
+
+  .rx-official-head {
+    gap: 5mm;
+    font-size: 5.4px;
+  }
+
+  .rx-special-purpose {
+    padding-top: 1.5mm;
+    font-size: 7px;
+  }
+
+  .rx-series-row {
+    gap: 2mm;
+    font-size: 6.4px;
+  }
+
+  .rx-patient-block {
+    gap: 1mm;
+  }
+
+  .rx-patient-block p {
+    grid-template-columns: 29mm 1fr;
+    gap: 2mm;
+  }
+
+  .rx-patient-block span {
+    font-size: 5.2px;
+  }
+
+  .rx-patient-block strong {
+    min-height: 3.5mm;
+    font-size: 6.8px;
+  }
+
+  .rx-prescription-block {
+    min-height: 20mm;
+    gap: 1mm;
+    padding: 1.5mm 0;
+  }
+
+  .rx-prescription-block p {
+    padding-left: 12mm;
+  }
+
+  .rx-rp-line {
+    font-size: 5.8px;
+  }
+
+  .rx-release-line {
+    padding: 1.5mm 0;
+    font-size: 6.6px;
+  }
+
+  .rx-footer {
+    grid-template-columns: 1.1fr 0.36fr 1fr 0.55fr;
+    gap: 2mm;
+    padding-top: 1mm;
+    font-size: 5.2px;
+  }
+
+  .rx-footer div {
+    gap: 1mm;
+  }
+
+  .rx-footer strong {
+    min-height: 3.4mm;
+    font-size: 6.2px;
   }
 }
