@@ -523,15 +523,17 @@
   .recipe-layout,
   .recipe-preview {
     display: block !important;
-    width: 105mm !important;
+    width: 210mm !important;
     max-width: none !important;
-    height: 148.5mm !important;
+    min-height: 297mm !important;
+    height: auto !important;
     margin: 0 !important;
     padding: 0 !important;
   }
 
   .recipe-paper-stack {
     display: block !important;
+    width: 210mm !important;
   }
 
   .print-only {
@@ -630,9 +632,12 @@
 
   .recipe-paper-front {
     page-break-after: always;
+    break-after: page;
   }
 
   .recipe-paper-back {
+    page-break-before: always;
+    break-before: page;
     page-break-after: auto;
     gap: 3mm;
   }
