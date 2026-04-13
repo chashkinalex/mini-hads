@@ -169,6 +169,27 @@ function getReleaseLine(items: PrescriptionItem[]) {
   return `ОТПУСКАТЬ ПО ${quantity}${form.toUpperCase()} ЕЖЕМЕСЯЧНО`;
 }
 
+function shouldLimitFrontSideToTwo(items: PrescriptionItem[]) {
+  const firstThree = items.slice(0, 3);
+  if (firstThree.length < 3) return false;
+
+  const hasLongInstruction = firstThree
+    .slice(0, 2)
+    .some((item) => item.instructions.trim().length > 56 || renderLine(item).length > 62);
+
+  const combinedInstructionLength = firstThree
+    .slice(0, 2)
+    .reduce((sum, item) => sum + item.instructions.trim().length, 0);
+
+  return hasLongInstruction || combinedInstructionLength > 88;
+}
+
+function getPrintableItems(items: PrescriptionItem[]) {
+  if (items.length === 0) return [];
+  const limit = shouldLimitFrontSideToTwo(items) ? 2 : 3;
+  return items.slice(0, limit);
+}
+
 export function RecipeApp() {
   const [draft, setDraft] = useState<RecipeDraft>(() => getImportedDraft() ?? initialDraft);
   const [history, setHistory] = useState<HistoryItem[]>(() => loadHistory());
@@ -178,6 +199,12 @@ export function RecipeApp() {
   const isReadyToPrint = draft.patient.name.trim() && draft.patient.birthDate.trim() && draft.doctorName.trim() && draft.items.length > 0;
 
   const selectedSummary = useMemo(() => draft.items.filter((item) => item.name.trim()), [draft.items]);
+  const printableItems = useMemo(() => getPrintableItems(selectedSummary), [selectedSummary]);
+  const printableSlots = useMemo(
+    () => Array.from({ length: 3 }, (_, index) => printableItems[index] ?? null),
+    [printableItems],
+  );
+  const hiddenItemsCount = Math.max(0, selectedSummary.length - printableItems.length);
 
   useEffect(() => {
     document.title = "Рецепты";
@@ -381,85 +408,107 @@ export function RecipeApp() {
           <aside className="recipe-card recipe-preview">
             <div className="recipe-preview-head">
               <h2>Предпросмотр</h2>
-              <span>{selectedSummary.length} назнач.</span>
+              <span>{printableItems.length} из {selectedSummary.length}</span>
             </div>
-            <div className="recipe-paper">
-              <div className="rx-official-head">
-                <div>
-                  <span>Министерство здравоохранения</span>
-                  <span>Российской Федерации</span>
-                  <br />
-                  <span>Наименование медицинской организации</span>
-                  <strong>{draft.clinicName || "________________________"}</strong>
-                </div>
-                <div>
-                  <span>Код формы по ОКУД</span>
-                  <span>Код учреждения по ОКПО</span>
-                  <br />
-                  <span>Медицинская документация</span>
-                  <strong>Форма N 107-1/у</strong>
-                </div>
-              </div>
-              <div className="rx-special-purpose">ПО СПЕЦИАЛЬНОМУ НАЗНАЧЕНИЮ</div>
-              <div className="rx-series-row">
-                <span>РЕЦЕПТ</span>
-                <span>серия _________ N _________</span>
-                <span>«{new Intl.DateTimeFormat("ru-RU", { day: "2-digit" }).format(new Date())}» __________ 20__ г.</span>
-              </div>
-              <div className="rx-patient-block">
-                <p>
-                  <span>Фамилия, инициалы имени и отчества пациента</span>
-                  <strong>{draft.patient.name || "____________________________"}</strong>
-                </p>
-                <p>
-                  <span>Дата рождения</span>
-                  <strong>{formatDate(draft.patient.birthDate) || "____________________________"}</strong>
-                </p>
-                {draft.patient.diagnosis ? (
-                  <p>
-                    <span>Диагноз / комментарий</span>
-                    <strong>{draft.patient.diagnosis}</strong>
-                  </p>
-                ) : null}
-              </div>
-              <div className="rx-prescription-list">
-                {selectedSummary.length === 0 ? (
-                  <div className="rx-prescription-block">
-                    <div className="rx-rp-line">руб.|коп.| Rp.</div>
-                    <p className="recipe-muted">Назначения появятся здесь.</p>
+            <div className="recipe-paper-stack">
+              <div className="recipe-paper recipe-paper-front">
+                <div className="rx-official-head">
+                  <div>
+                    <span>Министерство здравоохранения</span>
+                    <span>Российской Федерации</span>
+                    <br />
+                    <span>Наименование медицинской организации</span>
+                    <strong>{draft.clinicName || "________________________"}</strong>
                   </div>
-                ) : (
-                  selectedSummary.map((item, index) => (
-                    <div key={item.id} className="rx-prescription-block">
-                      <div className="rx-rp-line">руб.|коп.| Rp.</div>
-                      <p>
-                        <b>{index + 1}.</b> {renderLine(item)}
-                      </p>
-                      <p>D.t.d. N {item.quantity || "___"}</p>
-                      {item.instructions ? <p>S. {item.instructions}</p> : <p>S. ________________________________</p>}
-                    </div>
-                  ))
-                )}
+                  <div>
+                    <span>Код формы по ОКУД</span>
+                    <span>Код учреждения по ОКПО</span>
+                    <br />
+                    <span>Медицинская документация</span>
+                    <strong>Форма N 107-1/у</strong>
+                  </div>
+                </div>
+                <div className="rx-special-purpose">ПО СПЕЦИАЛЬНОМУ НАЗНАЧЕНИЮ</div>
+                <div className="rx-series-row">
+                  <span>РЕЦЕПТ</span>
+                  <span>серия _________ N _________</span>
+                  <span>«{new Intl.DateTimeFormat("ru-RU", { day: "2-digit" }).format(new Date())}» __________ 20__ г.</span>
+                </div>
+                <div className="rx-patient-block">
+                  <p>
+                    <span>Фамилия, инициалы имени и отчества пациента</span>
+                    <strong>{draft.patient.name || "____________________________"}</strong>
+                  </p>
+                  <p>
+                    <span>Дата рождения</span>
+                    <strong>{formatDate(draft.patient.birthDate) || "____________________________"}</strong>
+                  </p>
+                </div>
+                <div className="rx-prescription-list">
+                  {printableSlots.map((item, index) =>
+                    item ? (
+                      <div key={item.id} className="rx-prescription-block">
+                        <div className="rx-rp-line">руб.|коп.| Rp.</div>
+                        <p>
+                          <b>{index + 1}.</b> {renderLine(item)}
+                        </p>
+                        <p>D.t.d. N {item.quantity || "___"}</p>
+                        {item.instructions ? <p>S. {item.instructions}</p> : <p>S. ________________________________</p>}
+                      </div>
+                    ) : (
+                      <div key={`empty-${index}`} className="rx-prescription-block rx-prescription-block-empty">
+                        <div className="rx-rp-line">руб.|коп.| Rp.</div>
+                        <p>________________________________</p>
+                        <p>D.t.d. N ________________________</p>
+                        <p>S. ________________________________</p>
+                      </div>
+                    ),
+                  )}
+                </div>
+                <div className="rx-release-line">{getReleaseLine(printableItems)}</div>
+                <div className="rx-footer">
+                  <div>
+                    <span>Подпись</span>
+                    <strong>________________________</strong>
+                  </div>
+                  <div>
+                    <span>М.П.</span>
+                  </div>
+                  <div>
+                    <span>Фамилия лечащего врача</span>
+                    <strong>{draft.doctorName || "________________________"}</strong>
+                  </div>
+                  <div>
+                    <span>Рецепт действителен</span>
+                    <strong>90 дней</strong>
+                  </div>
+                </div>
               </div>
-              <div className="rx-release-line">{getReleaseLine(selectedSummary)}</div>
-              <div className="rx-footer">
-                <div>
-                  <span>Подпись</span>
-                  <strong>________________________</strong>
+              <div className="recipe-paper recipe-paper-back print-only">
+                <div className="rx-back-title">Оборотная сторона</div>
+                <div className="rx-back-box">
+                  <span>Отметка о назначении лекарственного препарата по решению врачебной комиссии</span>
+                  <div className="rx-back-box-fill" />
                 </div>
-                <div>
-                  <span>М.П.</span>
-                </div>
-                <div>
-                  <span>Фамилия лечащего врача</span>
-                  <strong>{draft.doctorName || "________________________"}</strong>
-                </div>
-                <div>
-                  <span>Рецепт действителен</span>
-                  <strong>90 дней</strong>
+                <div className="rx-back-signatures">
+                  <div>
+                    <span>Приготовил</span>
+                    <strong>________________________</strong>
+                  </div>
+                  <div>
+                    <span>Проверил</span>
+                    <strong>________________________</strong>
+                  </div>
+                  <div>
+                    <span>Отпустил</span>
+                    <strong>________________________</strong>
+                  </div>
                 </div>
               </div>
             </div>
+            {hiddenItemsCount > 0 ? (
+              <p className="recipe-truncate-note">На один бланк помещаются первые {printableItems.length} назначения. Остальные лучше оформить отдельным рецептом.</p>
+            ) : null}
             <div className="recipe-preview-actions">
               <button className="recipe-button recipe-button-secondary" type="button" onClick={copyShareLink} disabled={draft.items.length === 0}>
                 {shareCopied ? "Ссылка скопирована" : "Скопировать ссылку"}

@@ -233,6 +233,21 @@
   font-size: 0.82rem;
 }
 
+.recipe-truncate-note {
+  margin: 0;
+  color: #92400e;
+  font-size: 0.82rem;
+}
+
+.recipe-paper-stack {
+  display: grid;
+  gap: 14px;
+}
+
+.print-only {
+  display: none !important;
+}
+
 .recipe-paper {
   min-height: 520px;
   display: grid;
@@ -325,6 +340,10 @@
   border-bottom: 1px dashed #6b7280;
 }
 
+.rx-prescription-block-empty {
+  color: #9ca3af;
+}
+
 .rx-prescription-block p {
   margin: 0;
   padding-left: 44px;
@@ -360,6 +379,47 @@
   min-height: 18px;
   color: #111827;
   font-size: 0.72rem;
+}
+
+.recipe-paper-back {
+  align-content: stretch;
+}
+
+.rx-back-title {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.rx-back-box {
+  display: grid;
+  gap: 8px;
+}
+
+.rx-back-box span,
+.rx-back-signatures span {
+  color: #4b5563;
+  font-size: 0.66rem;
+}
+
+.rx-back-box-fill {
+  min-height: 160px;
+  border: 1px dashed #6b7280;
+}
+
+.rx-back-signatures {
+  display: grid;
+  gap: 12px;
+}
+
+.rx-back-signatures div {
+  display: grid;
+  gap: 4px;
+}
+
+.rx-back-signatures strong {
+  min-height: 18px;
+  border-bottom: 1px solid #9ca3af;
 }
 
 .recipe-history {
@@ -454,6 +514,7 @@
   .recipe-preview-head,
   .recipe-preview-actions,
   .recipe-print-note,
+  .recipe-truncate-note,
   .recipe-history {
     display: none !important;
   }
@@ -467,6 +528,14 @@
     height: 148.5mm !important;
     margin: 0 !important;
     padding: 0 !important;
+  }
+
+  .recipe-paper-stack {
+    display: block !important;
+  }
+
+  .print-only {
+    display: grid !important;
   }
 
   .recipe-card {
@@ -557,5 +626,43 @@
   .rx-footer strong {
     min-height: 3.4mm;
     font-size: 6.2px;
+  }
+
+  .recipe-paper-front {
+    page-break-after: always;
+  }
+
+  .recipe-paper-back {
+    page-break-after: auto;
+    gap: 3mm;
+  }
+
+  .rx-back-title {
+    font-size: 6.8px;
+  }
+
+  .rx-back-box {
+    gap: 2mm;
+  }
+
+  .rx-back-box span,
+  .rx-back-signatures span {
+    font-size: 5.8px;
+  }
+
+  .rx-back-box-fill {
+    min-height: 82mm;
+  }
+
+  .rx-back-signatures {
+    gap: 2.5mm;
+  }
+
+  .rx-back-signatures div {
+    gap: 1mm;
+  }
+
+  .rx-back-signatures strong {
+    min-height: 4mm;
   }
 }
